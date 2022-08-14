@@ -1,6 +1,9 @@
 package main
 
-import log "github.com/sirupsen/logrus"
+import (
+	log "github.com/sirupsen/logrus"
+	"some-api/services/api"
+)
 
 func main() {
 	formatter := &log.TextFormatter{
@@ -8,4 +11,7 @@ func main() {
 	}
 	log.SetFormatter(formatter)
 	log.Info("I'm alive!")
+
+	server := api.NewApi()
+	log.Fatalln(server.Start(":8000"))
 }
