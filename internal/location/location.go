@@ -6,10 +6,10 @@ import (
 )
 
 type Location struct {
-	Pk        string
-	PersonID  string
-	Latitude  string
-	Longitude string
+	Pk        string `json:"-"`
+	PersonID  string `json:"-"`
+	Latitude  string `json:"latitude"`
+	Longitude string `json:"longitude"`
 }
 
 func Get(store db.DataStore, personID string) (*Location, error) {

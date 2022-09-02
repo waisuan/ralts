@@ -1,13 +1,14 @@
-package api
+package server
 
 import (
+	"encoding/json"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"net/http"
 	"net/http/httptest"
+	locationService "some-api/internal/location"
 	"some-api/utils/db"
-	"strings"
 	"testing"
 )
 
@@ -17,8 +18,8 @@ func TestApi(t *testing.T) {
 }
 
 var _ = Describe("getLocation", func() {
-	Context("Happy", func() {
-		It("Runs", func() {
+	Context("When location exists for a given user", func() {
+		It("Returns the location coordinates", func() {
 			mockDB := &db.MockDatabaseClient{
 				GetByPkFn: func(pk string) (map[string]types.AttributeValue, error) {
 					return map[string]types.AttributeValue{
@@ -29,11 +30,11 @@ var _ = Describe("getLocation", func() {
 					}, nil
 				},
 			}
-			a := NewApi(mockDB)
+			a := NewServer(mockDB)
 
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			rec := httptest.NewRecorder()
-			c := a.echo.NewContext(req, rec)
+			c := a.router.NewContext(req, rec)
 			c.SetPath("/location/:id")
 			c.SetParamNames("id")
 			c.SetParamValues("Evan")
@@ -41,9 +42,11 @@ var _ = Describe("getLocation", func() {
 			err := a.getLocation(c)
 			Expect(err).To(BeNil())
 			Expect(rec.Code).To(Equal(http.StatusOK))
-			Expect(strings.TrimSuffix(rec.Body.String(), "\n")).To(
-				Equal(`{"Pk":"1234","PersonID":"1234","Latitude":"1.12","Longitude":"0.9999"}`),
-			)
+
+			var location locationService.Location
+			_ = json.Unmarshal(rec.Body.Bytes(), &location)
+			Expect(location.Latitude).To(Equal("1.12"))
+			Expect(location.Longitude).To(Equal("0.9999"))
 		})
 	})
 })
