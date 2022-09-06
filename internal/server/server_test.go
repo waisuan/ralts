@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -47,6 +48,51 @@ var _ = Describe("getLocation", func() {
 			_ = json.Unmarshal(rec.Body.Bytes(), &location)
 			Expect(location.Latitude).To(Equal("1.12"))
 			Expect(location.Longitude).To(Equal("0.9999"))
+		})
+	})
+
+	Context("When location does not exist for a given user", func() {
+		It("Returns an empty response", func() {
+			mockDB := &db.MockDatabaseClient{
+				GetByPkFn: func(pk string) (map[string]types.AttributeValue, error) {
+					return nil, nil
+				},
+			}
+			a := NewServer(mockDB)
+
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			rec := httptest.NewRecorder()
+			c := a.Router.NewContext(req, rec)
+			c.SetPath("/location/:id")
+			c.SetParamNames("id")
+			c.SetParamValues("Evan")
+
+			err := a.getLocation(c)
+			Expect(err).To(BeNil())
+			Expect(rec.Code).To(Equal(http.StatusNotFound))
+			Expect(rec.Body.String()).To(Equal("Not found"))
+		})
+	})
+
+	Context("When there is an error with the request", func() {
+		It("Returns an error response", func() {
+			mockDB := &db.MockDatabaseClient{
+				GetByPkFn: func(pk string) (map[string]types.AttributeValue, error) {
+					return nil, errors.New("bad stuff")
+				},
+			}
+			a := NewServer(mockDB)
+
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			rec := httptest.NewRecorder()
+			c := a.Router.NewContext(req, rec)
+			c.SetPath("/location/:id")
+			c.SetParamNames("id")
+			c.SetParamValues("Evan")
+
+			err := a.getLocation(c)
+			Expect(err).To(BeNil())
+			Expect(rec.Code).To(Equal(http.StatusInternalServerError))
 		})
 	})
 })

@@ -13,6 +13,6 @@ func main() {
 	log.SetFormatter(formatter)
 	log.Info("I'm alive!")
 
-	server := server.NewServer(db.New())
-	log.Fatalln(server.Router.Start(":8000"))
+	s := server.NewServer(db.New())
+	log.Fatalln(s.Router.Start(":8001"))
 }
