@@ -34,7 +34,7 @@ var _ = Describe("getLocation", func() {
 
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			rec := httptest.NewRecorder()
-			c := a.router.NewContext(req, rec)
+			c := a.Router.NewContext(req, rec)
 			c.SetPath("/location/:id")
 			c.SetParamNames("id")
 			c.SetParamValues("Evan")
