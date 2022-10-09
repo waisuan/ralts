@@ -23,9 +23,12 @@ func NewServer(dbClient db.DataStore) *Server {
 	}
 
 	e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
+		adminUsername := "admin"    //os.Getenv("ADMIN_USERNAME")
+		adminPassword := "password" //os.Getenv("ADMIN_PASSWORD")
+
 		// Be careful to use constant time comparison to prevent timing attacks
-		if subtle.ConstantTimeCompare([]byte(username), []byte("joe")) == 1 &&
-			subtle.ConstantTimeCompare([]byte(password), []byte("secret")) == 1 {
+		if subtle.ConstantTimeCompare([]byte(username), []byte(adminUsername)) == 1 &&
+			subtle.ConstantTimeCompare([]byte(password), []byte(adminPassword)) == 1 {
 			return true, nil
 		}
 		return false, nil

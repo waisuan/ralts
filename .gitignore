@@ -2,3 +2,4 @@
 some-api.iml
 dummy.txt
 tmp/
+.env

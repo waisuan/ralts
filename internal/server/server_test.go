@@ -18,6 +18,53 @@ func TestApi(t *testing.T) {
 	RunSpecs(t, "API test suite")
 }
 
+var _ = Describe("HTTP requests", func() {
+	Context("/location/:id", func() {
+		It("Return a 401 HTTP response if request is not authenticated", func() {
+			mockDB := &db.MockDatabaseClient{
+				GetByPkFn: func(pk string) (map[string]types.AttributeValue, error) {
+					return map[string]types.AttributeValue{
+						"pk":        &types.AttributeValueMemberS{Value: "1234"},
+						"personID":  &types.AttributeValueMemberS{Value: "1234"},
+						"latitude":  &types.AttributeValueMemberS{Value: "1.12"},
+						"longitude": &types.AttributeValueMemberS{Value: "0.9999"},
+					}, nil
+				},
+			}
+
+			a := NewServer(mockDB)
+
+			req := httptest.NewRequest(http.MethodGet, "/location/test", nil)
+			rec := httptest.NewRecorder()
+
+			a.Router.ServeHTTP(rec, req)
+			Expect(rec.Code).To(Equal(http.StatusUnauthorized))
+		})
+
+		It("Return a 200 HTTP response if request is authenticated", func() {
+			mockDB := &db.MockDatabaseClient{
+				GetByPkFn: func(pk string) (map[string]types.AttributeValue, error) {
+					return map[string]types.AttributeValue{
+						"pk":        &types.AttributeValueMemberS{Value: "1234"},
+						"personID":  &types.AttributeValueMemberS{Value: "1234"},
+						"latitude":  &types.AttributeValueMemberS{Value: "1.12"},
+						"longitude": &types.AttributeValueMemberS{Value: "0.9999"},
+					}, nil
+				},
+			}
+
+			a := NewServer(mockDB)
+
+			req := httptest.NewRequest(http.MethodGet, "/location/test", nil)
+			req.SetBasicAuth("admin", "password")
+			rec := httptest.NewRecorder()
+
+			a.Router.ServeHTTP(rec, req)
+			Expect(rec.Code).To(Equal(http.StatusOK))
+		})
+	})
+})
+
 var _ = Describe("getLocation", func() {
 	Context("When location exists for a given user", func() {
 		It("Returns the location coordinates", func() {
