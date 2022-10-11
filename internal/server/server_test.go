@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 	"net/http"
 	"net/http/httptest"
+	"some-api/internal/db"
 	locationService "some-api/internal/location"
-	"some-api/utils/db"
 	"testing"
 )
 

@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
+	"some-api/internal/db"
 	"some-api/internal/server"
-	"some-api/utils/db"
 )
 
 func main() {

@@ -2,7 +2,7 @@ package location
 
 import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"some-api/utils/db"
+	"some-api/internal/db"
 )
 
 type Location struct {

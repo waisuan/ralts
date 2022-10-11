@@ -6,8 +6,8 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"some-api/internal/db"
 	"some-api/internal/location"
-	"some-api/utils/db"
 )
 
 type Server struct {
