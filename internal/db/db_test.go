@@ -1,25 +1,16 @@
 package db
 
 import (
-	"context"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	testHelper "some-api/internal/testing"
 	"testing"
 )
 
 func TestDb(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "DB service test suite")
-}
-
-func clearDB(db *DatabaseClient) {
-	_, err := db.client.DeleteTable(context.TODO(), &dynamodb.DeleteTableInput{TableName: aws.String(tableName)})
-	if err != nil {
-		panic(err)
-	}
 }
 
 type Test struct {
@@ -35,7 +26,7 @@ var _ = Describe("GetByPk", func() {
 	})
 
 	AfterEach(func() {
-		clearDB(db)
+		testHelper.ClearDB(db)
 	})
 
 	Context("When table item does not exist", func() {
@@ -70,7 +61,7 @@ var _ = Describe("UpdateItem", func() {
 	})
 
 	AfterEach(func() {
-		clearDB(db)
+		testHelper.ClearDB(db)
 	})
 
 	Context("When table item does not exist", func() {
