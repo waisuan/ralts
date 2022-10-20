@@ -28,9 +28,31 @@ var _ = Describe("Load", func() {
 	})
 
 	Context("Given a day and the current time", func() {
-		It("Returns messages ranging from 3 hours ago and on that day", func() {
-			msg, _ := chat.Load(time.Now(), time.Now)
-			Expect(msg).To(BeEmpty())
+		nowFn := func() time.Time {
+			t, _ := time.Parse("200601021504", "202210201600")
+			return t
+		}
+
+		BeforeEach(func() {
+			_ = chat.SaveMessage("user", "I am a message", nowFn)
+		})
+
+		Context("There are messages from 3 hours ago", func() {
+			It("Returns those messages", func() {
+				msg, _ := chat.LoadAllMessages(nowFn(), nowFn)
+
+				Expect(len(msg)).To(Equal(1))
+				Expect(msg[0].Text).To(Equal("I am a message"))
+			})
+		})
+
+		Context("There aren't any messages from 3 hours ago", func() {
+			It("Returns an empty response", func() {
+				t, _ := time.Parse("200601021504", "202310201600")
+				msg, _ := chat.LoadAllMessages(t, nowFn)
+
+				Expect(msg).To(BeEmpty())
+			})
 		})
 	})
 })

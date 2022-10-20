@@ -2,13 +2,11 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"strings"
 )
 
 const (
@@ -19,11 +17,6 @@ const (
 	TableName      = "locations"
 	pkFieldName    = "pk"
 )
-
-type DataStore interface {
-	GetByPk(pk string) (map[string]types.AttributeValue, error)
-	UpdateItem(pk string, attributes map[string]string) error
-}
 
 type DatabaseClient struct {
 	Client *dynamodb.Client
@@ -75,46 +68,4 @@ func New() *DatabaseClient {
 	}
 
 	return &DatabaseClient{Client: svc}
-}
-
-func (db *DatabaseClient) GetByPk(pk string) (map[string]types.AttributeValue, error) {
-	out, err := db.Client.GetItem(context.TODO(), &dynamodb.GetItemInput{
-		TableName: aws.String(TableName),
-		Key: map[string]types.AttributeValue{
-			pkFieldName: &types.AttributeValueMemberS{Value: pk},
-		},
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return out.Item, nil
-}
-
-func (db *DatabaseClient) UpdateItem(pk string, attributes map[string]string) error {
-	var updateExprAttr []string
-	exprAttrVal := make(map[string]types.AttributeValue)
-	for k, v := range attributes {
-		value := fmt.Sprintf(":%s", k)
-		updateExprAttr = append(updateExprAttr, fmt.Sprintf("%s = %s", k, value))
-		exprAttrVal[value] = &types.AttributeValueMemberS{Value: v}
-	}
-
-	updateExpr := "set " + strings.Join(updateExprAttr, ", ")
-
-	_, err := db.Client.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
-		TableName: aws.String(TableName),
-		Key: map[string]types.AttributeValue{
-			pkFieldName: &types.AttributeValueMemberS{Value: pk},
-		},
-		UpdateExpression:          aws.String(updateExpr),
-		ExpressionAttributeValues: exprAttrVal,
-	})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
