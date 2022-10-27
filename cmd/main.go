@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
-	"some-api/internal/db"
 	"some-api/internal/server"
 )
 
@@ -19,6 +18,6 @@ func main() {
 	log.SetFormatter(formatter)
 	log.Info("I'm alive!")
 
-	s := server.NewServer(db.New())
+	s := server.NewServer()
 	log.Fatalln(s.Router.Start(":8001"))
 }

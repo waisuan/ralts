@@ -1,54 +1,91 @@
 package server
 
 import (
-	"crypto/subtle"
+	"fmt"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
-	"net/http"
+	"golang.org/x/net/websocket"
+	"some-api/internal/chat"
 	"some-api/internal/db"
-	"some-api/internal/location"
+	"sync"
+	"time"
 )
 
 type Server struct {
-	dataStore db.DataStore
-	Router    *echo.Echo
+	Router *echo.Echo
 }
 
-func NewServer(dbClient db.DataStore) *Server {
+var connectionPool = struct {
+	sync.RWMutex
+	connections map[*websocket.Conn]struct{}
+}{
+	connections: make(map[*websocket.Conn]struct{}),
+}
+
+func NewServer() *Server {
 	e := echo.New()
 	a := &Server{
-		dataStore: dbClient,
-		Router:    e,
+		Router: e,
 	}
 
-	e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
-		adminUsername := "admin"    //os.Getenv("ADMIN_USERNAME")
-		adminPassword := "password" //os.Getenv("ADMIN_PASSWORD")
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
 
-		// Be careful to use constant time comparison to prevent timing attacks
-		if subtle.ConstantTimeCompare([]byte(username), []byte(adminUsername)) == 1 &&
-			subtle.ConstantTimeCompare([]byte(password), []byte(adminPassword)) == 1 {
-			return true, nil
-		}
-		return false, nil
-	}))
+	e.GET("/ws", initChat)
 
-	e.GET("/location/:id", a.getLocation)
 	return a
 }
 
-func (s *Server) getLocation(c echo.Context) error {
-	personId := c.Param("id")
-	out, err := location.Get(s.dataStore, personId)
-	if err != nil {
-		log.Error(err)
-		c.Error(err)
-	}
+func initChat(c echo.Context) error {
+	ch := chat.NewChat(db.New())
 
-	if out == nil {
-		return c.String(http.StatusNotFound, "Not found")
-	}
+	websocket.Handler(func(conn *websocket.Conn) {
+		connectionPool.Lock()
+		connectionPool.connections[conn] = struct{}{}
 
-	return c.JSON(http.StatusOK, out)
+		defer func(conn2 *websocket.Conn) {
+			connectionPool.Lock()
+			err := conn2.Close()
+			if err != nil {
+				log.Warn(fmt.Sprintf("Unable to close websocket: %v", err))
+			}
+			delete(connectionPool.connections, conn2)
+			connectionPool.Unlock()
+		}(conn)
+
+		connectionPool.Unlock()
+
+		for {
+			// Write
+			msgs, _ := ch.LoadAllMessages(time.Now(), time.Now)
+			if len(msgs) != 0 {
+				connectionPool.RLock()
+
+				for connection := range connectionPool.connections {
+					for _, m := range msgs {
+						err := websocket.Message.Send(connection, fmt.Sprintf("[%s] %s: %s", m.CreatedAt, m.UserId, m.Text))
+						if err != nil {
+							c.Logger().Error(err)
+						}
+					}
+				}
+
+				connectionPool.RUnlock()
+			}
+
+			// Read
+			msg := ""
+			err := websocket.Message.Receive(conn, &msg)
+			if err != nil {
+				c.Logger().Error(err)
+			}
+			fmt.Printf("%s\n", msg)
+			_ = ch.SaveMessage(uuid.New().String(), msg, time.Now)
+		}
+
+	}).ServeHTTP(c.Response(), c.Request())
+
+	return nil
 }

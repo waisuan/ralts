@@ -36,7 +36,7 @@ func (c *Chat) LoadAllMessages(day time.Time, now func() time.Time) (Messages, e
 	var messages Messages
 
 	pk := day.Format("20060102")
-	sk := now().Add(-(time.Hour * 3)).Format("20060402150405")
+	sk := now().Add(-(time.Hour * 3)).Format("20060102150405")
 
 	out, err := c.db.Client.Query(context.TODO(), &dynamodb.QueryInput{
 		TableName:              aws.String(db.TableName),
@@ -56,6 +56,8 @@ func (c *Chat) LoadAllMessages(day time.Time, now func() time.Time) (Messages, e
 		log.Error(fmt.Sprintf("Unable to unmarshal chat messages -> %s", err.Error()))
 		return nil, err
 	}
+
+	fmt.Println(fmt.Sprintf("%s, %s, %v", pk, sk, len(messages)))
 
 	return messages, nil
 }
