@@ -57,7 +57,7 @@ func (c *Chat) LoadAllMessages(day time.Time, now func() time.Time) (Messages, e
 		return nil, err
 	}
 
-	fmt.Println(fmt.Sprintf("%s, %s, %v", pk, sk, len(messages)))
+	log.Info(fmt.Sprintf("%s, %s, %v", pk, sk, len(messages)))
 
 	return messages, nil
 }
