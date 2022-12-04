@@ -64,24 +64,44 @@ func initChat(c echo.Context) error {
 
 		connectionPool.Unlock()
 
+		var latestMsg *chat.Message
 		forceDisconnect := false
 		for {
 			// Write
-			msgs, _ := ch.LoadAllMessages(time.Now(), time.Now)
-			if len(msgs) != 0 {
+			if latestMsg == nil {
+				msgs, _ := ch.LoadAllMessages(time.Now(), time.Now)
+				if len(msgs) != 0 {
+					connectionPool.RLock()
+
+					for connection := range connectionPool.connections {
+						for _, m := range msgs {
+							err := websocket.Message.Send(connection, m.ToString())
+							if err != nil {
+								c.Logger().Error(err)
+
+								// Broken pipe, conn is probably dead.
+								if errors.Is(err, syscall.EPIPE) {
+									forceDisconnect = true
+									break
+								}
+							}
+						}
+					}
+
+					connectionPool.RUnlock()
+				}
+			} else {
 				connectionPool.RLock()
 
 				for connection := range connectionPool.connections {
-					for _, m := range msgs {
-						err := websocket.Message.Send(connection, fmt.Sprintf("[%s] %s: %s", m.CreatedAt, m.UserId, m.Text))
-						if err != nil {
-							c.Logger().Error(err)
+					err := websocket.Message.Send(connection, latestMsg.ToString())
+					if err != nil {
+						c.Logger().Error(err)
 
-							// Broken pipe, conn is probably dead.
-							if errors.Is(err, syscall.EPIPE) {
-								forceDisconnect = true
-								break
-							}
+						// Broken pipe, conn is probably dead.
+						if errors.Is(err, syscall.EPIPE) {
+							forceDisconnect = true
+							break
 						}
 					}
 				}
@@ -105,7 +125,7 @@ func initChat(c echo.Context) error {
 				}
 			} else {
 				fmt.Printf("%s\n", msg)
-				_ = ch.SaveMessage(uuid.New().String(), msg, time.Now)
+				latestMsg, _ = ch.SaveMessage(uuid.New().String(), msg, time.Now)
 			}
 		}
 

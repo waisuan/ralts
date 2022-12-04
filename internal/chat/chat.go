@@ -22,6 +22,10 @@ type Message struct {
 
 type Messages []Message
 
+func (m *Message) ToString() string {
+	return fmt.Sprintf("[%s] %s: %s", m.CreatedAt, m.UserId, m.Text)
+}
+
 type Chat struct {
 	db *db.DatabaseClient
 }
@@ -62,7 +66,7 @@ func (c *Chat) LoadAllMessages(day time.Time, now func() time.Time) (Messages, e
 	return messages, nil
 }
 
-func (c *Chat) SaveMessage(userId string, text string, now func() time.Time) error {
+func (c *Chat) SaveMessage(userId string, text string, now func() time.Time) (*Message, error) {
 	today := now().Format("20060102")
 	createdAt := now().Format("20060402150405")
 
@@ -78,8 +82,12 @@ func (c *Chat) SaveMessage(userId string, text string, now func() time.Time) err
 	})
 	if err != nil {
 		log.Error(fmt.Sprintf("Unable to save chat message -> %s", err.Error()))
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &Message{
+		UserId:    userId,
+		Text:      text,
+		CreatedAt: createdAt,
+	}, nil
 }
