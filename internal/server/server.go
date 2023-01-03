@@ -1,9 +1,9 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
@@ -17,6 +17,11 @@ import (
 
 type Server struct {
 	Router *echo.Echo
+}
+
+type Request struct {
+	UserId  string
+	Message string
 }
 
 var connectionPool = struct {
@@ -75,14 +80,19 @@ func initChat(c echo.Context) error {
 
 					for connection := range connectionPool.connections {
 						for _, m := range msgs {
-							err := websocket.Message.Send(connection, m.ToString())
+							payload, err := json.Marshal(&m)
 							if err != nil {
 								c.Logger().Error(err)
+							} else {
+								err := websocket.Message.Send(connection, string(payload))
+								if err != nil {
+									c.Logger().Error(err)
 
-								// Broken pipe, conn is probably dead.
-								if errors.Is(err, syscall.EPIPE) {
-									forceDisconnect = true
-									break
+									// Broken pipe, conn is probably dead.
+									if errors.Is(err, syscall.EPIPE) {
+										forceDisconnect = true
+										break
+									}
 								}
 							}
 						}
@@ -94,14 +104,19 @@ func initChat(c echo.Context) error {
 				connectionPool.RLock()
 
 				for connection := range connectionPool.connections {
-					err := websocket.Message.Send(connection, latestMsg.ToString())
+					payload, err := json.Marshal(&latestMsg)
 					if err != nil {
 						c.Logger().Error(err)
+					} else {
+						err := websocket.Message.Send(connection, string(payload))
+						if err != nil {
+							c.Logger().Error(err)
 
-						// Broken pipe, conn is probably dead.
-						if errors.Is(err, syscall.EPIPE) {
-							forceDisconnect = true
-							break
+							// Broken pipe, conn is probably dead.
+							if errors.Is(err, syscall.EPIPE) {
+								forceDisconnect = true
+								break
+							}
 						}
 					}
 				}
@@ -124,8 +139,14 @@ func initChat(c echo.Context) error {
 					break
 				}
 			} else {
-				fmt.Printf("%s\n", msg)
-				latestMsg, _ = ch.SaveMessage(uuid.New().String(), msg, time.Now)
+				var req Request
+				err := json.Unmarshal([]byte(msg), &req)
+				if err != nil {
+					c.Logger().Error(err)
+				} else {
+					fmt.Printf("%s: %s\n", req.UserId, req.Message)
+					latestMsg, _ = ch.SaveMessage(req.UserId, req.Message, time.Now)
+				}
 			}
 		}
 
