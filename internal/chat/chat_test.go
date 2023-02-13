@@ -3,8 +3,8 @@ package chat
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"some-api/internal/db"
-	testHelper "some-api/internal/testing"
+	"ralts/internal/db"
+	testHelper "ralts/internal/testing"
 	"testing"
 	"time"
 )
@@ -34,7 +34,7 @@ var _ = Describe("Load", func() {
 		}
 
 		BeforeEach(func() {
-			_ = chat.SaveMessage("user", "I am a message", nowFn)
+			_, _ = chat.SaveMessage("user", "I am a message", nowFn)
 		})
 
 		Context("There are messages from 3 hours ago", func() {

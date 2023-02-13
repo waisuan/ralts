@@ -12,8 +12,8 @@ import (
 const (
 	region         = "eu-central-1"
 	localEndpoint  = "http://localhost:8000"
-	localAccessKey = "dummy"
-	localSecretKey = "dummy"
+	localAccessKey = "coding"
+	localSecretKey = "coding"
 	TableName      = "locations"
 	pkFieldName    = "pk"
 )

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,8 +9,10 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/websocket"
-	"some-api/internal/chat"
-	"some-api/internal/db"
+	"google.golang.org/api/idtoken"
+	"net/http"
+	"ralts/internal/chat"
+	"ralts/internal/db"
 	"sync"
 	"syscall"
 	"time"
@@ -60,6 +63,13 @@ func removeWsConn(conn *websocket.Conn) {
 
 func initChat(c echo.Context) error {
 	ch := chat.NewChat(db.New())
+
+	token := c.QueryParam("authorization")
+	o := authUser(token)
+	if o == nil {
+		return c.JSON(http.StatusUnauthorized, "not authenticated")
+	}
+	log.Info(fmt.Sprintf("%s has been authenticated.", o.Claims["email"]))
 
 	websocket.Handler(func(conn *websocket.Conn) {
 		connectionPool.Lock()
@@ -153,4 +163,13 @@ func initChat(c echo.Context) error {
 	}).ServeHTTP(c.Response(), c.Request())
 
 	return nil
+}
+
+func authUser(authToken string) *idtoken.Payload {
+	t, err := idtoken.Validate(context.TODO(), authToken, "DUMMY")
+	if err != nil {
+		return nil
+	}
+
+	return t
 }
