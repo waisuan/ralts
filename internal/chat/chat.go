@@ -3,91 +3,75 @@ package chat
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	log "github.com/sirupsen/logrus"
+	"github.com/labstack/gommon/log"
 	"ralts/internal/db"
 	"time"
 )
 
 type Message struct {
-	Pk        string `json:"-"`
-	Sk        string `json:"-"`
-	UserId    string `json:"userId"`
-	Text      string `json:"text"`
-	CreatedAt string `json:"createdAt"`
+	ChatId    int64     `json:"chatId"`
+	Username  string    `json:"username"`
+	Message   string    `json:"message"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 type Messages []Message
 
 func (m *Message) ToString() string {
-	return fmt.Sprintf("[%s] %s: %s", m.CreatedAt, m.UserId, m.Text)
+	return fmt.Sprintf("[%s] %s: %s",
+		m.CreatedAt.Format("2006-01-02 15:01:05"),
+		m.Username,
+		m.Message,
+	)
 }
 
 type Chat struct {
-	db *db.DatabaseClient
+	DB db.CoreDatabaseInterface
 }
 
-func NewChat(db *db.DatabaseClient) *Chat {
+func NewChat(db db.CoreDatabaseInterface) *Chat {
 	return &Chat{
-		db: db,
+		DB: db,
 	}
 }
 
-func (c *Chat) LoadAllMessages(day time.Time, now func() time.Time) (Messages, error) {
-	var messages Messages
-
-	pk := day.Format("20060102")
-	sk := now().Add(-(time.Hour * 3)).Format("20060102150405")
-
-	out, err := c.db.Client.Query(context.TODO(), &dynamodb.QueryInput{
-		TableName:              aws.String(db.TableName),
-		KeyConditionExpression: aws.String("pk = :pk and sk >= :sk"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":pk": &types.AttributeValueMemberS{Value: pk},
-			":sk": &types.AttributeValueMemberS{Value: sk},
-		},
-	})
+func (c *Chat) LoadAllMessages() (Messages, error) {
+	rows, err := c.DB.Query(context.Background(), "select * from chat order by created_at;")
 	if err != nil {
+		log.Error(fmt.Sprintf("Unable to execute query -> %s", err.Error()))
+		return nil, err
+	}
+	defer rows.Close()
+
+	var messages Messages
+	for rows.Next() {
+		var m Message
+		err := rows.Scan(&m.ChatId, &m.Username, &m.Message, &m.CreatedAt)
+		if err != nil {
+			log.Error(fmt.Sprintf("Unable load query results -> %s", err.Error()))
+			return nil, err
+		}
+		messages = append(messages, m)
+	}
+	if err := rows.Err(); err != nil {
 		log.Error(fmt.Sprintf("Unable to load chat messages -> %s", err.Error()))
 		return nil, err
 	}
 
-	err = attributevalue.UnmarshalListOfMaps(out.Items, &messages)
-	if err != nil {
-		log.Error(fmt.Sprintf("Unable to unmarshal chat messages -> %s", err.Error()))
-		return nil, err
-	}
-
-	log.Info(fmt.Sprintf("%s, %s, %v", pk, sk, len(messages)))
-
 	return messages, nil
 }
 
-func (c *Chat) SaveMessage(userId string, text string, now func() time.Time) (*Message, error) {
-	today := now().Format("20060102")
-	createdAt := now().Format("20060402150405")
-
-	_, err := c.db.Client.PutItem(context.TODO(), &dynamodb.PutItemInput{
-		TableName: aws.String(db.TableName),
-		Item: map[string]types.AttributeValue{
-			"pk":        &types.AttributeValueMemberS{Value: today},
-			"sk":        &types.AttributeValueMemberS{Value: createdAt},
-			"userId":    &types.AttributeValueMemberS{Value: userId},
-			"text":      &types.AttributeValueMemberS{Value: text},
-			"createdAt": &types.AttributeValueMemberS{Value: createdAt},
-		},
-	})
+func (c *Chat) SaveMessage(username string, text string, now func() time.Time) (*Message, error) {
+	var m Message
+	err := c.DB.QueryRow(context.Background(), `
+    	insert into chat (username, message, created_at)
+    	VALUES ($1, $2, $3)
+    	RETURNING chat_id, username, message, created_at 
+    `, username, text, now()).Scan(&m.ChatId, &m.Username, &m.Message, &m.CreatedAt)
 	if err != nil {
 		log.Error(fmt.Sprintf("Unable to save chat message -> %s", err.Error()))
 		return nil, err
 	}
 
-	return &Message{
-		UserId:    userId,
-		Text:      text,
-		CreatedAt: createdAt,
-	}, nil
+	return &m, nil
 }

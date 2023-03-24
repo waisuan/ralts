@@ -12,14 +12,14 @@ import (
 	"google.golang.org/api/idtoken"
 	"net/http"
 	"ralts/internal/chat"
-	"ralts/internal/db"
 	"sync"
 	"syscall"
 	"time"
 )
 
 type Server struct {
-	Router *echo.Echo
+	Router      *echo.Echo
+	ChatHandler *chat.Chat
 }
 
 type Request struct {
@@ -34,22 +34,23 @@ var connectionPool = struct {
 	connections: make(map[*websocket.Conn]struct{}),
 }
 
-func NewServer() *Server {
+func NewServer(chatHandler *chat.Chat) *Server {
 	e := echo.New()
 	a := &Server{
-		Router: e,
+		Router:      e,
+		ChatHandler: chatHandler,
 	}
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 
-	e.GET("/ws", initChat)
+	e.GET("/ws", a.initChat)
 
 	return a
 }
 
-func removeWsConn(conn *websocket.Conn) {
+func (s *Server) removeWsConn(conn *websocket.Conn) {
 	connectionPool.Lock()
 	err := conn.Close()
 	if err != nil {
@@ -61,9 +62,7 @@ func removeWsConn(conn *websocket.Conn) {
 	connectionPool.Unlock()
 }
 
-func initChat(c echo.Context) error {
-	ch := chat.NewChat(db.New())
-
+func (s *Server) initChat(c echo.Context) error {
 	token := c.QueryParam("authorization")
 	o := authUser(token)
 	if o == nil {
@@ -75,7 +74,7 @@ func initChat(c echo.Context) error {
 		connectionPool.Lock()
 		connectionPool.connections[conn] = struct{}{}
 
-		defer removeWsConn(conn)
+		defer s.removeWsConn(conn)
 
 		connectionPool.Unlock()
 
@@ -84,7 +83,7 @@ func initChat(c echo.Context) error {
 		for {
 			// Write
 			if latestMsg == nil {
-				msgs, _ := ch.LoadAllMessages(time.Now(), time.Now)
+				msgs, _ := s.ChatHandler.LoadAllMessages(time.Now(), time.Now)
 				if len(msgs) != 0 {
 					connectionPool.RLock()
 
@@ -155,7 +154,7 @@ func initChat(c echo.Context) error {
 					c.Logger().Error(err)
 				} else {
 					fmt.Printf("%s: %s\n", req.UserId, req.Message)
-					latestMsg, _ = ch.SaveMessage(req.UserId, req.Message, time.Now)
+					latestMsg, _ = s.ChatHandler.SaveMessage(req.UserId, req.Message, time.Now)
 				}
 			}
 		}

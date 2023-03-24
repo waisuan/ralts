@@ -1,15 +1,32 @@
 package testing
 
 import (
-	"context"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"ralts/internal/db"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	log "github.com/sirupsen/logrus"
 )
 
-func ClearDB(dbClient *db.DatabaseClient) {
-	_, err := dbClient.Client.DeleteTable(context.TODO(), &dynamodb.DeleteTableInput{TableName: aws.String(db.TableName)})
+func InitDB() {
+	m, err := migrate.New(
+		"file:../../db/migrations",
+		"postgres://xxxx:xxxx@localhost:5433/ralts_test?sslmode=disable")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
+	}
+	if err := m.Up(); err != nil {
+		log.Warn(err)
+	}
+}
+
+func ClearDB() {
+	m, err := migrate.New(
+		"file:../../db/migrations",
+		"postgres://xxxx:xxxx@localhost:5433/ralts_test?sslmode=disable")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := m.Down(); err != nil {
+		log.Warn(err)
 	}
 }
