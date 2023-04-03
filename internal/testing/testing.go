@@ -5,12 +5,13 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	log "github.com/sirupsen/logrus"
+	"ralts/internal/config"
 )
 
-func InitDB() {
+func InitDB(cfg *config.Config) {
 	m, err := migrate.New(
 		"file:../../db/migrations",
-		"postgres://xxxx:xxxx@localhost:5433/ralts_test?sslmode=disable")
+		cfg.DatabaseConn)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -19,10 +20,10 @@ func InitDB() {
 	}
 }
 
-func ClearDB() {
+func ClearDB(cfg *config.Config) {
 	m, err := migrate.New(
 		"file:../../db/migrations",
-		"postgres://xxxx:xxxx@localhost:5433/ralts_test?sslmode=disable")
+		cfg.DatabaseConn)
 	if err != nil {
 		log.Fatal(err)
 	}

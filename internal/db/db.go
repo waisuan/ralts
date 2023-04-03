@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
+	"ralts/internal/config"
 )
 
 type CoreDatabaseInterface interface {
@@ -15,8 +16,8 @@ type RaltsDatabase struct {
 	Conn *pgx.Conn
 }
 
-func NewRaltsDatabase(connString string) *RaltsDatabase {
-	conn, err := pgx.Connect(context.Background(), connString)
+func NewRaltsDatabase(cfg *config.Config) *RaltsDatabase {
+	conn, err := pgx.Connect(context.Background(), cfg.DatabaseConn)
 	if err != nil {
 		log.Fatal(err)
 	}

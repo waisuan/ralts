@@ -83,7 +83,7 @@ func (s *Server) initChat(c echo.Context) error {
 		for {
 			// Write
 			if latestMsg == nil {
-				msgs, _ := s.ChatHandler.LoadAllMessages(time.Now(), time.Now)
+				msgs, _ := s.ChatHandler.LoadAllMessages()
 				if len(msgs) != 0 {
 					connectionPool.RLock()
 

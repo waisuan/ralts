@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
-	"os"
 	"ralts/internal/chat"
+	"ralts/internal/config"
 	db "ralts/internal/db"
 	"ralts/internal/server"
 )
@@ -21,7 +21,9 @@ func main() {
 	log.SetFormatter(formatter)
 	log.Info("I'm alive!")
 
-	dbClient := db.NewRaltsDatabase(os.Getenv("DATABASE_URL"))
+	cfg := config.NewConfig(false)
+
+	dbClient := db.NewRaltsDatabase(cfg)
 	defer dbClient.Close()
 
 	chatHandler := chat.NewChat(dbClient)
