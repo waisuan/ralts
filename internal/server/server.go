@@ -10,7 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/websocket"
 	"google.golang.org/api/idtoken"
-	"net/http"
 	"ralts/internal/chat"
 	"sync"
 	"syscall"
@@ -63,12 +62,12 @@ func (s *Server) removeWsConn(conn *websocket.Conn) {
 }
 
 func (s *Server) initChat(c echo.Context) error {
-	token := c.QueryParam("authorization")
-	o := authUser(token)
-	if o == nil {
-		return c.JSON(http.StatusUnauthorized, "not authenticated")
-	}
-	log.Info(fmt.Sprintf("%s has been authenticated.", o.Claims["email"]))
+	//token := c.QueryParam("authorization")
+	//o := authUser(token)
+	//if o == nil {
+	//	return c.JSON(http.StatusUnauthorized, "not authenticated")
+	//}
+	//log.Info(fmt.Sprintf("%s has been authenticated.", o.Claims["email"]))
 
 	websocket.Handler(func(conn *websocket.Conn) {
 		connectionPool.Lock()
