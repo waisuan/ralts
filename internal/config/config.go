@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	DatabaseConn string `env:"DATABASE_URL,notEmpty"`
+	AuthToken    string `env:"AUTH_TOKEN" envDefault:"token"`
 }
 
 const projectDirName = "ralts"

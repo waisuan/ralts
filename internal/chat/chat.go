@@ -36,7 +36,7 @@ func NewChat(db db.CoreDatabaseInterface) *Chat {
 }
 
 func (c *Chat) LoadAllMessages() (Messages, error) {
-	rows, err := c.DB.Query(context.Background(), "select * from chat order by created_at;")
+	rows, err := c.DB.Query(context.Background(), "select * from chat order by created_at limit 50;")
 	if err != nil {
 		log.Error(fmt.Sprintf("Unable to execute query -> %s", err.Error()))
 		return nil, err

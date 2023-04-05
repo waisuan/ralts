@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,8 +8,9 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/websocket"
-	"google.golang.org/api/idtoken"
+	"net/http"
 	"ralts/internal/chat"
+	"ralts/internal/config"
 	"sync"
 	"syscall"
 	"time"
@@ -19,6 +19,7 @@ import (
 type Server struct {
 	Router      *echo.Echo
 	ChatHandler *chat.Chat
+	Config      *config.Config
 }
 
 type Request struct {
@@ -33,11 +34,12 @@ var connectionPool = struct {
 	connections: make(map[*websocket.Conn]struct{}),
 }
 
-func NewServer(chatHandler *chat.Chat) *Server {
+func NewServer(chatHandler *chat.Chat, cfg *config.Config) *Server {
 	e := echo.New()
 	a := &Server{
 		Router:      e,
 		ChatHandler: chatHandler,
+		Config:      cfg,
 	}
 
 	e.Use(middleware.Logger())
@@ -62,12 +64,10 @@ func (s *Server) removeWsConn(conn *websocket.Conn) {
 }
 
 func (s *Server) initChat(c echo.Context) error {
-	//token := c.QueryParam("authorization")
-	//o := authUser(token)
-	//if o == nil {
-	//	return c.JSON(http.StatusUnauthorized, "not authenticated")
-	//}
-	//log.Info(fmt.Sprintf("%s has been authenticated.", o.Claims["email"]))
+	token := c.QueryParam("authorization")
+	if token != s.Config.AuthToken {
+		return c.JSON(http.StatusUnauthorized, "not authenticated")
+	}
 
 	websocket.Handler(func(conn *websocket.Conn) {
 		connectionPool.Lock()
@@ -161,13 +161,4 @@ func (s *Server) initChat(c echo.Context) error {
 	}).ServeHTTP(c.Response(), c.Request())
 
 	return nil
-}
-
-func authUser(authToken string) *idtoken.Payload {
-	t, err := idtoken.Validate(context.TODO(), authToken, "DUMMY")
-	if err != nil {
-		return nil
-	}
-
-	return t
 }

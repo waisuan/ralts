@@ -28,6 +28,6 @@ func main() {
 
 	chatHandler := chat.NewChat(dbClient)
 
-	s := server.NewServer(chatHandler)
+	s := server.NewServer(chatHandler, cfg)
 	log.Fatalln(s.Router.Start(":8001"))
 }
