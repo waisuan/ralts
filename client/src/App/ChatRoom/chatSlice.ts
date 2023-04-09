@@ -10,11 +10,7 @@ interface Message {
 }
 
 interface UserProfile {
-  email: string,
-  familyName: string,
-  givenName: string,
-  name: string,
-  picture: string,
+  username: string
 }
 
 interface ChatState {
@@ -35,6 +31,7 @@ export const chatSlice = createSlice({
   initialState,
   reducers: {
     initConnection: ((state, action) => {
+      state.messages = [];
       state.isConnecting = true;
     }),
     setConnState: ((state, action) => {
@@ -42,14 +39,13 @@ export const chatSlice = createSlice({
       state.connected = action.payload;
     }),
     disconnect: ((state) => {
+      state.messages = [];
       state.userProfile = undefined;
       localStorage.removeItem('chat_sess_token');
     }),
     setUserProfile: ((state, action) => {
-      const authToken = action.payload;
-      state.userProfile = jwt_decode<UserProfile>(authToken);
-      console.log(state.userProfile);
-      localStorage.setItem('chat_sess_token', authToken);
+      state.userProfile = action.payload;
+      localStorage.setItem('chat_sess_token', JSON.stringify(action.payload));
     }),
     receiveMessage: ((state, action) => {
       console.log(action.payload);
@@ -57,7 +53,7 @@ export const chatSlice = createSlice({
       state.messages.push(payload);
     }),
     sendMessage: ((state, action) => {
-      // state.messages.push(action.payload);
+      //
     }),
   },
 })

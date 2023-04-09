@@ -1,22 +1,22 @@
-import React, { ChangeEvent, useEffect, useRef, useState } from "react"
-import Button from "@mui/material/Button";
+import React, { useEffect, useRef, useState } from "react"
 
 import { useAppSelector, useAppDispatch } from "../hooks"
 import { chatSliceActions, getMessages, getUserProfile } from "./chatSlice"
 import { Box, Container } from "@mui/system";
-import { AppBar, Avatar, Card, CardContent, Grid, IconButton, Menu, MenuItem, Paper, TextField, Toolbar, Typography } from "@mui/material";
+import { AppBar, Avatar, Button, Card, CardContent,IconButton, InputAdornment, Menu, MenuItem, TextField, Toolbar, Typography } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import MenuIcon from "@mui/icons-material/Menu";
-import AccountCircle from "@mui/icons-material/AccountCircle";
-import { CredentialResponse, GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
+import { AccountCircle, ConstructionOutlined, Key } from "@mui/icons-material";
+import { log } from "console";
 
 const ChatRoom: React.FC = () => {
     const messages = useAppSelector(getMessages)
     const dispatch = useAppDispatch()
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [inputMessage, setInputMessage] = useState<String>("");
+    const [username, setUsername] = useState<String>("");
+    const [authToken, setAuthToken] = useState<String>("");
     const userProfile = useAppSelector(getUserProfile);
-    const [authState, setAuthState] = useState<boolean>(localStorage.getItem('chat_sess_token') !== null);
     const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
     const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -40,23 +40,23 @@ const ChatRoom: React.FC = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
 
-    const login = (res: CredentialResponse) => {
-        const authToken = res.credential;
-        console.log(authToken);
-        dispatch(chatSliceActions.initConnection(authToken));
+    const login = () => {
+        dispatch(chatSliceActions.initConnection({
+            username: username,
+            authToken: authToken
+        }));
+    }
+
+    const logout = () => {
+        dispatch(chatSliceActions.disconnect());
     }
 
     useEffect(() => {
-        // console.log("Checking session...");
-        // const authToken = localStorage.getItem('chat_sess_token');
-        //
-        // console.log(userProfile);
-        // console.log(authToken);
-        // // TODO: check chat_sess_token exp
-        // if (userProfile === undefined && authToken) {
-        //     dispatch(chatSliceActions.initConnection(authToken));
-        // }
-        dispatch(chatSliceActions.initConnection(""));
+        console.log("Checking session...");
+        const creds = localStorage.getItem('chat_sess_token');
+        if (creds) {
+            dispatch(chatSliceActions.initConnection(JSON.parse(creds)));
+        }
     }, []);
 
     useEffect(() => {
@@ -75,7 +75,6 @@ const ChatRoom: React.FC = () => {
                     variant="outlined"
                     sx={{
                         p: 10,
-                        backgroundColor: "#33A0FF"
                     }}
                 >
                     <CardContent>
@@ -85,17 +84,61 @@ const ChatRoom: React.FC = () => {
                             component="div"
                             sx={{
                                 textAlign: 'center',
-                                color: 'white'
+                                mb: '20px'
                             }}
                         >
                             Who are you?
                         </Typography>
-                        <GoogleOAuthProvider clientId="DUMMY">
-                            <GoogleLogin
-                                onSuccess={login}
-                                onError={() => {}}
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                            }}
+                            >
+                            <TextField
+                                required
+                                id="username"
+                                label="Name"
+                                variant="standard"
+                                margin="normal"
+                                value={username}
+                                onChange={(e) => { setUsername(e.target.value); }}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <AccountCircle />
+                                        </InputAdornment>
+                                    ),
+                                }}
                             />
-                        </GoogleOAuthProvider>
+                            <TextField
+                                required
+                                id="auth-token"
+                                label="Token"
+                                variant="standard"
+                                margin="normal"
+                                type="password"
+                                value={authToken}
+                                onChange={(e) => { setAuthToken(e.target.value); }}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <Key />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+                            <Button 
+                                variant="contained"
+                                disabled={username === "" || authToken === ""}
+                                onClick={login}
+                                sx={{
+                                    mt: '20px'
+                                }}
+                            >
+                                Login
+                            </Button>                      
+                        </Box>
                     </CardContent>
                 </Card>
             </Box>
@@ -119,7 +162,7 @@ const ChatRoom: React.FC = () => {
                         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                             ralts.
                         </Typography>
-                        <Typography>{userProfile?.name || "FakeUser"}</Typography>
+                        <Typography>{userProfile?.username}</Typography>
                         <IconButton
                             size="large"
                             aria-label="account of current user"
@@ -129,10 +172,8 @@ const ChatRoom: React.FC = () => {
                             color="inherit"
                         >
                             <Avatar 
-                                src={userProfile?.picture}
                                 sx={{ width: 30, height: 30 }}
                             />
-                            {/* <AccountCircle /> */}
                         </IconButton>
                         <Menu
                             sx={{ mt: "40px" }}
@@ -150,7 +191,7 @@ const ChatRoom: React.FC = () => {
                             open={Boolean(anchorEl)}
                             onClose={handleClose}
                         >
-                            <MenuItem onClick={handleClose}>Logout</MenuItem>
+                            <MenuItem onClick={logout}>Logout</MenuItem>
                         </Menu>
                     </Toolbar>
                 </AppBar>
@@ -173,7 +214,7 @@ const ChatRoom: React.FC = () => {
                                         border: "1px solid black",
                                         width: 250,
                                         backgroundColor: "#33F6FF",
-                                        ...(m.username === "EvanSia" && {
+                                        ...(m.username === userProfile?.username && {
                                             backgroundColor: "white",
                                             ml: "auto"
                                         })
@@ -222,8 +263,7 @@ const ChatRoom: React.FC = () => {
 
     return (
         <div>
-            { mainContainer() }
-            {/*{userProfile ? mainContainer() : (authState ? <div/> : loginContainer())}*/}
+            {userProfile ? mainContainer() : loginContainer()}
         </div>
     );
 }

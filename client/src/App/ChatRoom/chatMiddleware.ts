@@ -9,12 +9,12 @@ const chatMiddleware: Middleware = store => {
 
   return next => action => {
     if (chatSliceActions.initConnection.match(action)) { 
-      const authToken = action.payload
+      const authToken = action.payload["authToken"];
       socket = new WebSocket(WS_URL + "?authorization=" + authToken)
 
       socket.onopen = () => {
         store.dispatch(chatSliceActions.setConnState(true));
-        store.dispatch(chatSliceActions.setUserProfile(authToken))
+        store.dispatch(chatSliceActions.setUserProfile(action.payload))
       };
 
       socket.onerror = () => {
@@ -27,11 +27,14 @@ const chatMiddleware: Middleware = store => {
         store.dispatch(chatSliceActions.receiveMessage(e.data));
       };
     } else if(chatSliceActions.sendMessage.match(action)) {
-      const payload = JSON.stringify({
-        userId: Math.floor(Math.random() * 2) === 0 ? "EvanSia" : "Rando",
+      const state = store.getState().chat;
+
+      socket.send(JSON.stringify({
+        userId: state.userProfile!!.username, //Math.floor(Math.random() * 2) === 0 ? "EvanSia" : "Rando",
         message: action.payload
-      });
-      socket.send(payload);
+      }));
+    } else if (chatSliceActions.disconnect.match(action)) {
+      socket.close();
     }
  
     next(action);
