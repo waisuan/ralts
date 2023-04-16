@@ -1,17 +1,15 @@
 # Overview
 
-TBD
+A simple web chat app that has just **one** single chat room for users to converse semi-anonymously on.
 
-## Quickstart
+# Local Development
 
-TBD
+You'll need the following tools installed on your local machine:-
+- postgresql (>= 12)
+- Golang (>= 1.18)
+- npm (>= 8.5.0)
+- node (>= 16.14.2)
 
-## Features
-TBD
+`.env.test` is reserved for (unit) testing purposes.
 
-## TODOs
-
-- Configure environment variables
-- Move ralts-ui into same repo(?)
-- Mock database access and functions
-- Add pagination to SQL query
+`.env` is reserved for running the app locally.
