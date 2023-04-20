@@ -8,6 +8,15 @@ import (
 	"ralts/internal/config"
 )
 
+func TestHelper(cfg *config.Config) func() {
+	ClearDB(cfg)
+	InitDB(cfg)
+
+	return func() {
+		ClearDB(cfg)
+	}
+}
+
 func InitDB(cfg *config.Config) {
 	m, err := migrate.New(
 		"file:../../db/migrations",

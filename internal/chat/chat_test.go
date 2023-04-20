@@ -11,15 +11,6 @@ import (
 
 var cfg = config.NewConfig(true)
 
-func initTestHelper() func() {
-	testHelper.ClearDB(cfg)
-	testHelper.InitDB(cfg)
-
-	return func() {
-		testHelper.ClearDB(cfg)
-	}
-}
-
 func now() time.Time {
 	return time.Date(2022, 11, 17, 20, 34, 58, 651387000, time.UTC)
 }
@@ -30,8 +21,8 @@ func TestChat_LoadAllMessages_MessagesAvailable(t *testing.T) {
 	dbClient := db.NewRaltsDatabase(cfg)
 	defer dbClient.Close()
 
-	tH := initTestHelper()
-	defer tH()
+	th := testHelper.TestHelper(cfg)
+	defer th()
 
 	chat := NewChat(dbClient)
 
@@ -55,8 +46,8 @@ func TestChat_LoadAllMessages_NoMessagesAvailable(t *testing.T) {
 	dbClient := db.NewRaltsDatabase(cfg)
 	defer dbClient.Close()
 
-	tH := initTestHelper()
-	defer tH()
+	th := testHelper.TestHelper(cfg)
+	defer th()
 
 	chat := NewChat(dbClient)
 
@@ -71,8 +62,8 @@ func TestChat_SaveMessage_Successful(t *testing.T) {
 	dbClient := db.NewRaltsDatabase(cfg)
 	defer dbClient.Close()
 
-	tH := initTestHelper()
-	defer tH()
+	th := testHelper.TestHelper(cfg)
+	defer th()
 
 	chat := NewChat(dbClient)
 
