@@ -11,9 +11,13 @@ import (
 )
 
 type Server struct {
-	Router      *echo.Echo
+	Router   *echo.Echo
+	Config   *config.Config
+	Handlers *Handlers
+}
+
+type Handlers struct {
 	ChatHandler *chat.Chat
-	Config      *config.Config
 }
 
 var upgrader = websocket.Upgrader{
@@ -22,12 +26,12 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-func NewServer(chatHandler *chat.Chat, cfg *config.Config) *Server {
+func NewServer(handlers *Handlers, cfg *config.Config) *Server {
 	e := echo.New()
 	s := &Server{
-		Router:      e,
-		ChatHandler: chatHandler,
-		Config:      cfg,
+		Router:   e,
+		Config:   cfg,
+		Handlers: handlers,
 	}
 	pool := NewPool()
 	go pool.Start()
@@ -51,14 +55,22 @@ func (s *Server) ServeChat(c echo.Context, pool *Pool) error {
 	}
 	defer conn.Close()
 
-	client := &Connection{
-		ID:   uuid.NewString(),
-		C:    conn,
-		Pool: pool,
-	}
+	if len(pool.Clients) >= s.Config.MaxConnCount {
+		_ = conn.WriteMessage(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(websocket.CloseTryAgainLater, "max no. of client connections reached"),
+		)
+	} else {
+		client := &Connection{
+			ID:   uuid.NewString(),
+			C:    conn,
+			Pool: pool,
+			Chat: s.Handlers.ChatHandler,
+		}
 
-	pool.Register <- client
-	client.Read()
+		pool.Register <- client
+		client.Read()
+	}
 
 	return nil
 }

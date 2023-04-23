@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"ralts/internal/chat"
+	"time"
 )
 
 type Payload struct {
@@ -15,6 +17,7 @@ type Connection struct {
 	ID   string
 	C    *websocket.Conn
 	Pool *Pool
+	Chat *chat.Chat
 }
 
 func (c *Connection) Read() {
@@ -42,7 +45,16 @@ func (c *Connection) Read() {
 			continue
 		}
 
-		c.Pool.Broadcast <- payload
+		// TODO: Limit the no. of messages sent in a day.
+
+		saved, err := c.Chat.SaveMessage(payload.UserId, payload.Message, time.Now)
+		if err != nil {
+			log.Errorf("unable to save message: %e", err)
+			// TODO: Send an error response back to client-side.
+			continue
+		}
+
+		c.Pool.Broadcast <- saved
 		log.Infof("Message Received: %+v", payload)
 	}
 }

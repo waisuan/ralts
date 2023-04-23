@@ -7,30 +7,27 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"ralts/internal/chat"
 	"ralts/internal/config"
 	"ralts/internal/db"
 	testHelper "ralts/internal/testing"
 	"strings"
 	"testing"
+	"time"
 )
 
-type WsHandler struct {
-	handler echo.HandlerFunc
+type TestServer struct {
+	serve func(e echo.Context)
 }
 
 var cfg = config.NewConfig(true)
 
-func ServeHttp(w http.ResponseWriter, r *http.Request) {
+func (s *TestServer) ServeHttp(w http.ResponseWriter, r *http.Request) {
 	e := echo.New()
 	c := e.NewContext(r, w)
 
-	pool := NewPool()
-	go pool.Start()
-
-	s := &Server{}
-
 	forever := make(chan struct{})
-	_ = s.ServeChat(c, pool)
+	s.serve(c)
 	<-forever
 }
 
@@ -43,12 +40,31 @@ func TestServer_ServeChat(t *testing.T) {
 	th := testHelper.TestHelper(cfg)
 	defer th()
 
-	server := httptest.NewServer(http.HandlerFunc(ServeHttp))
+	pool := NewPool()
+	go pool.Start()
+
+	s := &Server{
+		Handlers: &Handlers{
+			ChatHandler: chat.NewChat(dbClient),
+		},
+		Config: cfg,
+	}
+
+	ts := &TestServer{
+		serve: func(e echo.Context) {
+			_ = s.ServeChat(e, pool)
+		},
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(ts.ServeHttp))
 	defer server.Close()
 
 	wsUrl := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws"
 
-	ws, _, err := websocket.DefaultDialer.Dial(wsUrl, nil)
+	dialer := websocket.DefaultDialer
+	dialer.HandshakeTimeout = time.Second
+
+	ws, _, err := dialer.Dial(wsUrl, nil)
 	assert.Nil(err)
 	assert.NotNil(ws)
 
@@ -59,7 +75,16 @@ func TestServer_ServeChat(t *testing.T) {
 	_, msg, err := ws.ReadMessage()
 	assert.Nil(err)
 
-	var receivedPayload Payload
+	var receivedPayload chat.Message
 	_ = json.Unmarshal(msg, &receivedPayload)
-	assert.Equal(receivedPayload, *sentPayload)
+	assert.Equal(int64(1), receivedPayload.ChatId)
+	assert.Equal(sentPayload.Message, receivedPayload.Message)
+	assert.Equal(sentPayload.UserId, receivedPayload.Username)
+	assert.NotNil(receivedPayload.CreatedAt)
+
+	// Test_MaxConnCount
+	_, _, _ = dialer.Dial(wsUrl, nil)
+	ws, _, _ = dialer.Dial(wsUrl, nil)
+	_, _, err = ws.ReadMessage()
+	assert.Equal("websocket: close 1013: max no. of client connections reached", err.Error())
 }

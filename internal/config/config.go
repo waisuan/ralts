@@ -11,6 +11,7 @@ import (
 type Config struct {
 	DatabaseConn string `env:"DATABASE_URL,notEmpty"`
 	AuthToken    string `env:"AUTH_TOKEN" envDefault:"token"`
+	MaxConnCount int    `env:"MAX_CONN_COUNT" envDefault:"50"`
 }
 
 const projectDirName = "ralts"

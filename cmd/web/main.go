@@ -27,7 +27,10 @@ func main() {
 	defer dbClient.Close()
 
 	chatHandler := chat.NewChat(dbClient)
+	h := server.Handlers{
+		ChatHandler: chatHandler,
+	}
 
-	s := server.NewServer(chatHandler, cfg)
+	s := server.NewServer(&h, cfg)
 	log.Fatalln(s.Router.Start(":8001"))
 }

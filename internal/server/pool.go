@@ -2,13 +2,14 @@ package server
 
 import (
 	log "github.com/sirupsen/logrus"
+	"ralts/internal/chat"
 )
 
 type Pool struct {
 	Register   chan *Connection
 	Unregister chan *Connection
 	Clients    map[*Connection]bool
-	Broadcast  chan Payload
+	Broadcast  chan *chat.Message
 }
 
 func NewPool() *Pool {
@@ -16,7 +17,7 @@ func NewPool() *Pool {
 		Register:   make(chan *Connection),
 		Unregister: make(chan *Connection),
 		Clients:    make(map[*Connection]bool),
-		Broadcast:  make(chan Payload),
+		Broadcast:  make(chan *chat.Message),
 	}
 }
 
@@ -25,6 +26,7 @@ func (pool *Pool) Start() {
 		select {
 		case client := <-pool.Register:
 			pool.Clients[client] = true
+			// TODO: Broadcast recent messages upon successful client registration.
 			log.Infof("Size of Connection Pool: %d", len(pool.Clients))
 			break
 		case client := <-pool.Unregister:
