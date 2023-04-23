@@ -35,7 +35,7 @@ func (pool *Pool) Start() {
 			break
 		case message := <-pool.Broadcast:
 			log.Info("Sending message to all clients in Pool")
-			for client, _ := range pool.Clients {
+			for client := range pool.Clients {
 				if err := client.C.WriteJSON(message); err != nil {
 					log.Errorf("unable to broadcast message: %e", err)
 					return
