@@ -26,8 +26,19 @@ func (pool *Pool) Start() {
 		select {
 		case client := <-pool.Register:
 			pool.Clients[client] = true
-			// TODO: Broadcast recent messages upon successful client registration.
 			log.Infof("Size of Connection Pool: %d", len(pool.Clients))
+
+			msgs, err := client.Chat.LoadAllMessages()
+			if err != nil {
+				log.Errorf("unable to send recent messages to new client: %e", err)
+			} else {
+				for _, msg := range msgs {
+					if err := client.C.WriteJSON(msg); err != nil {
+						log.Errorf("unable to send message to new client: %e", err)
+					}
+				}
+			}
+
 			break
 		case client := <-pool.Unregister:
 			delete(pool.Clients, client)

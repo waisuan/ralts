@@ -2,7 +2,8 @@ package db
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	log "github.com/sirupsen/logrus"
 	"ralts/internal/config"
 )
@@ -13,11 +14,11 @@ type CoreDatabaseInterface interface {
 }
 
 type RaltsDatabase struct {
-	Conn *pgx.Conn
+	Conn *pgxpool.Pool
 }
 
 func NewRaltsDatabase(cfg *config.Config) *RaltsDatabase {
-	conn, err := pgx.Connect(context.Background(), cfg.DatabaseConn)
+	conn, err := pgxpool.Connect(context.Background(), cfg.DatabaseConn)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -28,7 +29,7 @@ func NewRaltsDatabase(cfg *config.Config) *RaltsDatabase {
 }
 
 func (db *RaltsDatabase) Close() {
-	db.Conn.Close(context.Background())
+	db.Conn.Close()
 }
 
 func (db *RaltsDatabase) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {

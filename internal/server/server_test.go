@@ -34,9 +34,6 @@ func (s *TestServer) ServeHttp(w http.ResponseWriter, r *http.Request) {
 func TestServer_ServeChat(t *testing.T) {
 	assert := assert.New(t)
 
-	dbClient := db.NewRaltsDatabase(cfg)
-	defer dbClient.Close()
-
 	th := testHelper.TestHelper(cfg)
 	defer th()
 
@@ -44,14 +41,17 @@ func TestServer_ServeChat(t *testing.T) {
 	go pool.Start()
 
 	s := &Server{
-		Handlers: &Handlers{
-			ChatHandler: chat.NewChat(dbClient),
-		},
 		Config: cfg,
 	}
 
 	ts := &TestServer{
 		serve: func(e echo.Context) {
+			dbClient := db.NewRaltsDatabase(cfg)
+			defer dbClient.Close()
+
+			s.Handlers = &Handlers{
+				ChatHandler: chat.NewChat(dbClient),
+			}
 			_ = s.ServeChat(e, pool)
 		},
 	}
