@@ -3,8 +3,8 @@ package chat
 import (
 	"context"
 	"fmt"
-	"github.com/labstack/gommon/log"
-	"ralts/internal/db"
+	log "github.com/sirupsen/logrus"
+	"ralts/internal/dependencies"
 	"time"
 )
 
@@ -26,17 +26,17 @@ func (m *Message) ToString() string {
 }
 
 type Chat struct {
-	DB db.CoreDatabaseInterface
+	deps *dependencies.Dependencies
 }
 
-func NewChat(db db.CoreDatabaseInterface) *Chat {
+func NewChat(deps *dependencies.Dependencies) *Chat {
 	return &Chat{
-		DB: db,
+		deps: deps,
 	}
 }
 
 func (c *Chat) LoadAllMessages() (Messages, error) {
-	rows, err := c.DB.Query(context.Background(), "select * from chat order by created_at limit 50;")
+	rows, err := c.deps.Storage.Query(context.Background(), "select * from chat order by created_at limit 50;")
 	if err != nil {
 		log.Error(fmt.Sprintf("Unable to execute query -> %s", err.Error()))
 		return nil, err
@@ -63,7 +63,7 @@ func (c *Chat) LoadAllMessages() (Messages, error) {
 
 func (c *Chat) SaveMessage(username string, text string, now func() time.Time) (*Message, error) {
 	var m Message
-	err := c.DB.QueryRow(context.Background(), `
+	err := c.deps.Storage.QueryRow(context.Background(), `
     	insert into chat (username, message, created_at)
     	VALUES ($1, $2, $3)
     	RETURNING chat_id, username, message, created_at 

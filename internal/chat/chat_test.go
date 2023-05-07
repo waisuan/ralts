@@ -3,7 +3,7 @@ package chat
 import (
 	"github.com/stretchr/testify/assert"
 	"ralts/internal/config"
-	"ralts/internal/db"
+	"ralts/internal/dependencies"
 	testHelper "ralts/internal/testing"
 	"testing"
 	"time"
@@ -18,13 +18,13 @@ func now() time.Time {
 func TestChat_LoadAllMessages_MessagesAvailable(t *testing.T) {
 	assert := assert.New(t)
 
-	dbClient := db.NewRaltsDatabase(cfg)
-	defer dbClient.Close()
+	deps := dependencies.NewDependencies(cfg)
+	defer deps.Disconnect()
 
 	th := testHelper.TestHelper(cfg)
 	defer th()
 
-	chat := NewChat(dbClient)
+	chat := NewChat(deps)
 
 	_, err := chat.SaveMessage("e.sia", "Lorem Ipsum", now)
 	assert.Nil(err)
@@ -43,13 +43,13 @@ func TestChat_LoadAllMessages_MessagesAvailable(t *testing.T) {
 func TestChat_LoadAllMessages_NoMessagesAvailable(t *testing.T) {
 	assert := assert.New(t)
 
-	dbClient := db.NewRaltsDatabase(cfg)
-	defer dbClient.Close()
+	deps := dependencies.NewDependencies(cfg)
+	defer deps.Disconnect()
 
 	th := testHelper.TestHelper(cfg)
 	defer th()
 
-	chat := NewChat(dbClient)
+	chat := NewChat(deps)
 
 	msgs, err := chat.LoadAllMessages()
 	assert.Nil(err)
@@ -59,13 +59,13 @@ func TestChat_LoadAllMessages_NoMessagesAvailable(t *testing.T) {
 func TestChat_SaveMessage_Successful(t *testing.T) {
 	assert := assert.New(t)
 
-	dbClient := db.NewRaltsDatabase(cfg)
-	defer dbClient.Close()
+	deps := dependencies.NewDependencies(cfg)
+	defer deps.Disconnect()
 
 	th := testHelper.TestHelper(cfg)
 	defer th()
 
-	chat := NewChat(dbClient)
+	chat := NewChat(deps)
 
 	msg, err := chat.SaveMessage("e.sia", "Lorem Ipsum", now)
 	assert.Nil(err)

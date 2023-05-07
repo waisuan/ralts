@@ -1,18 +1,29 @@
 package testing
 
 import (
+	"context"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/redis/go-redis/v9"
 	log "github.com/sirupsen/logrus"
 	"ralts/internal/config"
 )
 
+var ctx = context.Background()
+
 func TestHelper(cfg *config.Config) func() {
+	rdb := redis.NewClient(&redis.Options{
+		Addr: cfg.RedisConn,
+		DB:   0, // use default DB
+	})
+
+	rdb.FlushAll(ctx)
 	ClearDB(cfg)
 	InitDB(cfg)
 
 	return func() {
+		rdb.FlushAll(ctx)
 		ClearDB(cfg)
 	}
 }

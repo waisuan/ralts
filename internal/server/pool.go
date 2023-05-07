@@ -10,14 +10,16 @@ type Pool struct {
 	Unregister chan *Connection
 	Clients    map[*Connection]bool
 	Broadcast  chan *chat.Message
+	Callbacks  *Callbacks
 }
 
-func NewPool() *Pool {
+func NewPool(callbacks *Callbacks) *Pool {
 	return &Pool{
 		Register:   make(chan *Connection),
 		Unregister: make(chan *Connection),
 		Clients:    make(map[*Connection]bool),
 		Broadcast:  make(chan *chat.Message),
+		Callbacks:  callbacks,
 	}
 }
 
@@ -38,6 +40,8 @@ func (pool *Pool) Start() {
 					}
 				}
 			}
+
+			pool.Callbacks.PostRegister <- true
 
 			break
 		case client := <-pool.Unregister:

@@ -5,19 +5,16 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/log"
 	"net/http"
 	"ralts/internal/chat"
-	"ralts/internal/config"
+	"ralts/internal/dependencies"
+	"strconv"
 )
 
 type Server struct {
-	Router   *echo.Echo
-	Config   *config.Config
-	Handlers *Handlers
-}
-
-type Handlers struct {
-	ChatHandler *chat.Chat
+	Router *echo.Echo
+	Deps   *dependencies.Dependencies
 }
 
 var upgrader = websocket.Upgrader{
@@ -26,14 +23,17 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-func NewServer(handlers *Handlers, cfg *config.Config) *Server {
+func NewServer(deps *dependencies.Dependencies) *Server {
 	e := echo.New()
 	s := &Server{
-		Router:   e,
-		Config:   cfg,
-		Handlers: handlers,
+		Router: e,
+		Deps:   deps,
 	}
-	pool := NewPool()
+
+	callbacks := NewCallbacks(deps)
+	go callbacks.Listen()
+
+	pool := NewPool(callbacks)
 	go pool.Start()
 
 	e.Use(middleware.Logger())
@@ -43,6 +43,7 @@ func NewServer(handlers *Handlers, cfg *config.Config) *Server {
 	e.GET("/ws", func(c echo.Context) error {
 		return s.ServeChat(c, pool)
 	})
+	e.GET("/conn_count", s.GetConnCount)
 
 	return s
 }
@@ -55,7 +56,7 @@ func (s *Server) ServeChat(c echo.Context, pool *Pool) error {
 	}
 	defer conn.Close()
 
-	if len(pool.Clients) >= s.Config.MaxConnCount {
+	if len(pool.Clients) >= s.Deps.Cfg.MaxConnCount {
 		_ = conn.WriteMessage(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(websocket.CloseTryAgainLater, "max no. of client connections reached"),
@@ -65,7 +66,7 @@ func (s *Server) ServeChat(c echo.Context, pool *Pool) error {
 			ID:   uuid.NewString(),
 			C:    conn,
 			Pool: pool,
-			Chat: s.Handlers.ChatHandler,
+			Chat: chat.NewChat(s.Deps),
 		}
 
 		pool.Register <- client
@@ -73,4 +74,24 @@ func (s *Server) ServeChat(c echo.Context, pool *Pool) error {
 	}
 
 	return nil
+}
+
+func (s *Server) GetConnCount(c echo.Context) error {
+	type response struct {
+		Count int `json:"count"`
+	}
+
+	v, err := s.Deps.Cache.Get(CONN_COUNT_KEY)
+	if err != nil {
+		log.Errorf("unable to fetch conn count from cache: %e", err)
+		return c.JSON(http.StatusInternalServerError, "unable to handle request")
+	}
+
+	vi, _ := strconv.Atoi(v)
+
+	res := &response{
+		Count: vi,
+	}
+
+	return c.JSON(http.StatusOK, res)
 }

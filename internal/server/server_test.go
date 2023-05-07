@@ -9,54 +9,44 @@ import (
 	"net/http/httptest"
 	"ralts/internal/chat"
 	"ralts/internal/config"
-	"ralts/internal/db"
+	"ralts/internal/dependencies"
 	testHelper "ralts/internal/testing"
 	"strings"
 	"testing"
 	"time"
 )
 
-type TestServer struct {
-	serve func(e echo.Context)
-}
-
 var cfg = config.NewConfig(true)
-
-func (s *TestServer) ServeHttp(w http.ResponseWriter, r *http.Request) {
-	e := echo.New()
-	c := e.NewContext(r, w)
-
-	forever := make(chan struct{})
-	s.serve(c)
-	<-forever
-}
 
 func TestServer_ServeChat(t *testing.T) {
 	assert := assert.New(t)
 
+	deps := dependencies.NewDependencies(cfg)
+	defer deps.Disconnect()
+
 	th := testHelper.TestHelper(cfg)
 	defer th()
 
-	pool := NewPool()
+	callbacks := NewCallbacks(deps)
+	go callbacks.Listen()
+
+	pool := NewPool(callbacks)
 	go pool.Start()
 
 	s := &Server{
-		Config: cfg,
+		Deps: deps,
 	}
 
-	ts := &TestServer{
-		serve: func(e echo.Context) {
-			dbClient := db.NewRaltsDatabase(cfg)
-			defer dbClient.Close()
+	serveHttp := func(w http.ResponseWriter, r *http.Request) {
+		e := echo.New()
+		c := e.NewContext(r, w)
 
-			s.Handlers = &Handlers{
-				ChatHandler: chat.NewChat(dbClient),
-			}
-			_ = s.ServeChat(e, pool)
-		},
+		forever := make(chan struct{})
+		_ = s.ServeChat(c, pool)
+		<-forever
 	}
 
-	server := httptest.NewServer(http.HandlerFunc(ts.ServeHttp))
+	server := httptest.NewServer(http.HandlerFunc(serveHttp))
 	defer server.Close()
 
 	wsUrl := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws"
@@ -68,6 +58,7 @@ func TestServer_ServeChat(t *testing.T) {
 	assert.Nil(err)
 	assert.NotNil(ws)
 
+	// Test_Write
 	sentPayload := &Payload{UserId: "e.sia", Message: "Lorem Ipsum"}
 	err = ws.WriteJSON(sentPayload)
 	assert.Nil(err)
@@ -75,6 +66,7 @@ func TestServer_ServeChat(t *testing.T) {
 	_, msg, err := ws.ReadMessage()
 	assert.Nil(err)
 
+	// Test_Read
 	var receivedPayload chat.Message
 	_ = json.Unmarshal(msg, &receivedPayload)
 	assert.Equal(int64(1), receivedPayload.ChatId)
@@ -87,4 +79,9 @@ func TestServer_ServeChat(t *testing.T) {
 	ws, _, _ = dialer.Dial(wsUrl, nil)
 	_, _, err = ws.ReadMessage()
 	assert.Equal("websocket: close 1013: max no. of client connections reached", err.Error())
+
+	// Test_CachedEntries
+	r, err := deps.Cache.Get(CONN_COUNT_KEY)
+	assert.Nil(err)
+	assert.Equal(r, "1")
 }

@@ -3,7 +3,7 @@ package config
 import (
 	"github.com/caarlos0/env/v7"
 	"github.com/joho/godotenv"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"regexp"
 )
@@ -12,6 +12,7 @@ type Config struct {
 	DatabaseConn string `env:"DATABASE_URL,notEmpty"`
 	AuthToken    string `env:"AUTH_TOKEN" envDefault:"token"`
 	MaxConnCount int    `env:"MAX_CONN_COUNT" envDefault:"50"`
+	RedisConn    string `env:"REDIS_URL,notEmpty"`
 }
 
 const projectDirName = "ralts"
