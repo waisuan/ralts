@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react"
 
 import { useAppSelector, useAppDispatch } from "../hooks"
-import { chatSliceActions, getMessages, getUserProfile } from "./chatSlice"
+import { chatSliceActions, getMessages, getUserProfile, fetchConnCount, getConnCount } from "./chatSlice"
 import { Box, Container } from "@mui/system";
 import { AppBar, Avatar, Button, Card, CardContent,IconButton, InputAdornment, Menu, MenuItem, TextField, Toolbar, Typography } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
@@ -18,6 +18,7 @@ const ChatRoom: React.FC = () => {
     const [authToken, setAuthToken] = useState<String>("");
     const userProfile = useAppSelector(getUserProfile);
     const messagesEndRef = useRef<null | HTMLDivElement>(null);
+    const connCount = useAppSelector(getConnCount);
 
     const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -52,10 +53,12 @@ const ChatRoom: React.FC = () => {
     }
 
     useEffect(() => {
+        // TODO: Something funky going on here with keeping sessions alive upon page refresh...
         console.log("Checking session...");
         const creds = localStorage.getItem('chat_sess_token');
         if (creds) {
             dispatch(chatSliceActions.initConnection(JSON.parse(creds)));
+            dispatch(fetchConnCount());
         }
     }, []);
 
@@ -196,8 +199,17 @@ const ChatRoom: React.FC = () => {
                     </Toolbar>
                 </AppBar>
                 <Container maxWidth="md">
+                    <Typography
+                        variant="caption"
+                        display="block"
+                        sx={{ 
+                            mt: 2,
+                            color: "gray" 
+                        }}
+                    >
+                        No. of users: {connCount}
+                    </Typography>
                     <Box sx={{
-                        mt: 2,
                         width: "100%",
                         height: 800,
                         border: "1px solid black",

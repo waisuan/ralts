@@ -47,6 +47,9 @@ func (pool *Pool) Start() {
 		case client := <-pool.Unregister:
 			delete(pool.Clients, client)
 			log.Infof("Size of Connection Pool: %d", len(pool.Clients))
+
+			pool.Callbacks.PostUnregister <- true
+
 			break
 		case message := <-pool.Broadcast:
 			log.Info("Sending message to all clients in Pool")

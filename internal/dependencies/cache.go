@@ -12,6 +12,7 @@ type CoreCacheInterface interface {
 	Set(key string, value interface{}, expr time.Duration) error
 	Get(key string) (string, error)
 	Incr(key string) error
+	Decr(key string) error
 }
 
 type Cache struct {
@@ -51,4 +52,8 @@ func (c *Cache) Get(key string) (string, error) {
 
 func (c *Cache) Incr(key string) error {
 	return c.Client.Incr(ctx, key).Err()
+}
+
+func (c *Cache) Decr(key string) error {
+	return c.Client.Decr(ctx, key).Err()
 }

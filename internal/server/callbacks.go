@@ -8,8 +8,9 @@ import (
 const CONN_COUNT_KEY = "num_of_conn"
 
 type Callbacks struct {
-	Deps         *dependencies.Dependencies
-	PostRegister chan bool
+	Deps           *dependencies.Dependencies
+	PostRegister   chan bool
+	PostUnregister chan bool
 }
 
 func NewCallbacks(deps *dependencies.Dependencies) *Callbacks {
@@ -26,6 +27,13 @@ func (c *Callbacks) Listen() {
 			err := c.Deps.Cache.Incr(CONN_COUNT_KEY)
 			if err != nil {
 				log.Errorf("unable to handle PostRegister callback: %e", err)
+			}
+
+			break
+		case <-c.PostUnregister:
+			err := c.Deps.Cache.Decr(CONN_COUNT_KEY)
+			if err != nil {
+				log.Errorf("unable to handle PostUnregister callback: %e", err)
 			}
 
 			break
