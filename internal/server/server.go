@@ -5,7 +5,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"ralts/internal/chat"
 	"ralts/internal/dependencies"
@@ -52,6 +52,7 @@ func (s *Server) ServeChat(c echo.Context, pool *Pool) error {
 	// Upgrade our raw HTTP connection to a websocket based one
 	conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
+		log.Errorf("unable to initiate websocket request: %e", err)
 		return err
 	}
 	defer conn.Close()

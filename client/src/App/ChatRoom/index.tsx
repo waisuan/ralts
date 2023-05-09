@@ -53,13 +53,13 @@ const ChatRoom: React.FC = () => {
     }
 
     useEffect(() => {
-        // TODO: Something funky going on here with keeping sessions alive upon page refresh...
-        console.log("Checking session...");
+        console.log("Refreshing session...");
         const creds = localStorage.getItem('chat_sess_token');
+        dispatch(chatSliceActions.disconnect());
         if (creds) {
             dispatch(chatSliceActions.initConnection(JSON.parse(creds)));
-            dispatch(fetchConnCount());
         }
+        dispatch(fetchConnCount());
     }, []);
 
     useEffect(() => {

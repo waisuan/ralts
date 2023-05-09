@@ -1,7 +1,7 @@
 build:
 	go build -o bin/ralts cmd/web/main.go
 
-run:
+server:
 	go run cmd/web/main.go
 
 test:

@@ -76,9 +76,6 @@ export const fetchConnCount = () => async (dispatch: any) => {
     .catch((err) => {
       console.log(err.message);
     });
-  // dispatch(usersLoading());
-  // const response = await usersAPI.fetchAll()
-  // dispatch(usersReceived(response.data));
 }
 
 export const getMessages = (state: RootState) => state.chat.messages

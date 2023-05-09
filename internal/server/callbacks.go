@@ -15,8 +15,9 @@ type Callbacks struct {
 
 func NewCallbacks(deps *dependencies.Dependencies) *Callbacks {
 	return &Callbacks{
-		Deps:         deps,
-		PostRegister: make(chan bool),
+		Deps:           deps,
+		PostRegister:   make(chan bool),
+		PostUnregister: make(chan bool),
 	}
 }
 

@@ -80,8 +80,55 @@ func TestServer_ServeChat(t *testing.T) {
 	_, _, err = ws.ReadMessage()
 	assert.Equal("websocket: close 1013: max no. of client connections reached", err.Error())
 
-	// Test_CachedEntries
+	// Test_Callbacks_IncrConnCount
 	r, err := deps.Cache.Get(CONN_COUNT_KEY)
 	assert.Nil(err)
 	assert.Equal(r, "1")
+
+	// Test_Callbacks_DecrConnCount
+}
+
+func TestServer_GetConnCount_EmptyResponse(t *testing.T) {
+	assert := assert.New(t)
+
+	deps := dependencies.NewDependencies(cfg)
+	defer deps.Disconnect()
+
+	th := testHelper.TestHelper(cfg)
+	defer th()
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetPath("/conn_count")
+
+	s := NewServer(deps)
+
+	assert.NoError(s.GetConnCount(c))
+	assert.Equal(http.StatusOK, rec.Code)
+	assert.Equal(`{"count":0}`, strings.TrimSuffix(rec.Body.String(), "\n"))
+}
+
+func TestServer_GetConnCount_NonEmptyResponse(t *testing.T) {
+	assert := assert.New(t)
+
+	deps := dependencies.NewDependencies(cfg)
+	defer deps.Disconnect()
+
+	th := testHelper.TestHelper(cfg)
+	defer th()
+
+	_ = deps.Cache.Incr(CONN_COUNT_KEY)
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetPath("/conn_count")
+	s := NewServer(deps)
+
+	assert.NoError(s.GetConnCount(c))
+	assert.Equal(http.StatusOK, rec.Code)
+	assert.Equal(`{"count":1}`, strings.TrimSuffix(rec.Body.String(), "\n"))
 }
