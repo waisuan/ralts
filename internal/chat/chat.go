@@ -75,3 +75,31 @@ func (c *Chat) SaveMessage(username string, text string, now func() time.Time) (
 
 	return &m, nil
 }
+
+// TODO: Add table index around username and created_at
+func (c *Chat) GetMessageCount(username string, today func() time.Time) (int, error) {
+	rows, err := c.deps.Storage.Query(context.Background(), `
+		select count(*) from chat where username = $1 and created_at::timestamp::date = $2;
+	`, username, today().Format("2006-01-02"))
+	if err != nil {
+		log.Error(fmt.Sprintf("Unable to execute query -> %s", err.Error()))
+		return 0, err
+	}
+	defer rows.Close()
+
+	rows.Next()
+
+	var count int
+	err = rows.Scan(&count)
+	if err != nil {
+		log.Error(fmt.Sprintf("Unable load query results -> %s", err.Error()))
+		return 0, err
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Error(fmt.Sprintf("Unable to get message count -> %s", err.Error()))
+		return 0, err
+	}
+
+	return count, nil
+}

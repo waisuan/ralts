@@ -45,7 +45,18 @@ func (c *Connection) Read() {
 			continue
 		}
 
-		// TODO: Limit the no. of messages sent in a day.
+		// Limit the no. of messages sent in a day per user.
+		messageCount, err := c.Chat.GetMessageCount(payload.UserId, time.Now)
+		if err != nil {
+			log.Errorf("unable to get message count: %e", err)
+			// TODO: Send an error response back to client-side.
+			continue
+		}
+
+		// TODO: Save max message count as config env var
+		if messageCount == 100 {
+			// TODO: Code
+		}
 
 		saved, err := c.Chat.SaveMessage(payload.UserId, payload.Message, time.Now)
 		if err != nil {
