@@ -68,6 +68,7 @@ func (s *Server) ServeChat(c echo.Context, pool *Pool) error {
 			C:    conn,
 			Pool: pool,
 			Chat: chat.NewChat(s.Deps),
+			Deps: s.Deps,
 		}
 
 		pool.Register <- client

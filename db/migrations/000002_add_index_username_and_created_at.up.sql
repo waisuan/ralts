@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS username_and_day ON chat (username, (created_at::date));

@@ -83,9 +83,11 @@ func TestServer_ServeChat(t *testing.T) {
 	// Test_Callbacks_IncrConnCount
 	r, err := deps.Cache.Get(CONN_COUNT_KEY)
 	assert.Nil(err)
-	assert.Equal(r, "1")
+	assert.Equal("1", r)
 
 	// Test_Callbacks_DecrConnCount
+
+	// Test_MaxConnCount
 }
 
 func TestServer_GetConnCount_EmptyResponse(t *testing.T) {

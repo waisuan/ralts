@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"ralts/internal/chat"
+	"ralts/internal/dependencies"
 	"time"
 )
 
@@ -18,6 +19,7 @@ type Connection struct {
 	C    *websocket.Conn
 	Pool *Pool
 	Chat *chat.Chat
+	Deps *dependencies.Dependencies
 }
 
 func (c *Connection) Read() {
@@ -53,9 +55,13 @@ func (c *Connection) Read() {
 			continue
 		}
 
-		// TODO: Save max message count as config env var
-		if messageCount == 100 {
-			// TODO: Code
+		if messageCount >= c.Deps.Cfg.MaxConnCount {
+			log.Warnf("max message sent limit (%d) reached for %s", messageCount, payload.UserId)
+			_ = c.C.WriteMessage(
+				websocket.CloseTryAgainLater,
+				websocket.FormatCloseMessage(websocket.CloseTryAgainLater, "reached max no. of messages sent today"),
+			)
+			break
 		}
 
 		saved, err := c.Chat.SaveMessage(payload.UserId, payload.Message, time.Now)
