@@ -13,7 +13,7 @@ type Config struct {
 	AuthToken        string `env:"AUTH_TOKEN" envDefault:"token"`
 	MaxConnCount     int    `env:"MAX_CONN_COUNT" envDefault:"50"`
 	RedisConn        string `env:"REDIS_URL,notEmpty"`
-	MaxSentMsgPerDay string `env:"MAX_SENT_MSG_PER_DAY" envDefault:"1000"`
+	MaxSentMsgPerDay int    `env:"MAX_SENT_MSG_PER_DAY" envDefault:"1000"`
 }
 
 const projectDirName = "ralts"

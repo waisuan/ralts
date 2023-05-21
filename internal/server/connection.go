@@ -9,8 +9,22 @@ import (
 	"time"
 )
 
+const (
+	InternalServerError = "INTERNAL_SERVER_ERROR"
+)
+
+type Response struct {
+	Payload *Payload
+	Error   *Error
+}
+
 type Payload struct {
 	UserId  string
+	Message string
+}
+
+type Error struct {
+	Code    string
 	Message string
 }
 
@@ -55,10 +69,10 @@ func (c *Connection) Read() {
 			continue
 		}
 
-		if messageCount >= c.Deps.Cfg.MaxConnCount {
+		if messageCount >= c.Deps.Cfg.MaxSentMsgPerDay {
 			log.Warnf("max message sent limit (%d) reached for %s", messageCount, payload.UserId)
 			_ = c.C.WriteMessage(
-				websocket.CloseTryAgainLater,
+				websocket.CloseMessage,
 				websocket.FormatCloseMessage(websocket.CloseTryAgainLater, "reached max no. of messages sent today"),
 			)
 			break
