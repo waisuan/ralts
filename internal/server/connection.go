@@ -9,25 +9,6 @@ import (
 	"time"
 )
 
-const (
-	InternalServerError = "INTERNAL_SERVER_ERROR"
-)
-
-type Response struct {
-	Payload *Payload
-	Error   *Error
-}
-
-type Payload struct {
-	UserId  string
-	Message string
-}
-
-type Error struct {
-	Code    string
-	Message string
-}
-
 type Connection struct {
 	ID   string
 	C    *websocket.Conn
@@ -43,7 +24,7 @@ func (c *Connection) Read() {
 	}()
 
 	for {
-		_, p, err := c.C.ReadMessage()
+		_, r, err := c.C.ReadMessage()
 		if err != nil {
 			log.Errorf("unable to read message: %e", err)
 			if websocket.IsCloseError(err) {
@@ -54,23 +35,24 @@ func (c *Connection) Read() {
 			}
 			continue
 		}
-		var payload Payload
-		err = json.Unmarshal(p, &payload)
+		var request Request
+		err = json.Unmarshal(r, &request)
 		if err != nil {
 			log.Errorf("unable to unmarshal message: %e", err)
+			c.respondWithError(err)
 			continue
 		}
 
 		// Limit the no. of messages sent in a day per user.
-		messageCount, err := c.Chat.GetMessageCount(payload.UserId, time.Now)
+		messageCount, err := c.Chat.GetMessageCount(request.UserId, time.Now)
 		if err != nil {
 			log.Errorf("unable to get message count: %e", err)
-			// TODO: Send an error response back to client-side.
+			c.respondWithError(err)
 			continue
 		}
 
 		if messageCount >= c.Deps.Cfg.MaxSentMsgPerDay {
-			log.Warnf("max message sent limit (%d) reached for %s", messageCount, payload.UserId)
+			log.Warnf("max message sent limit (%d) reached for %s", messageCount, request.UserId)
 			_ = c.C.WriteMessage(
 				websocket.CloseMessage,
 				websocket.FormatCloseMessage(websocket.CloseTryAgainLater, "reached max no. of messages sent today"),
@@ -78,14 +60,29 @@ func (c *Connection) Read() {
 			break
 		}
 
-		saved, err := c.Chat.SaveMessage(payload.UserId, payload.Message, time.Now)
+		saved, err := c.Chat.SaveMessage(request.UserId, request.Message, time.Now)
 		if err != nil {
 			log.Errorf("unable to save message: %e", err)
-			// TODO: Send an error response back to client-side.
+			c.respondWithError(err)
 			continue
 		}
 
-		c.Pool.Broadcast <- saved
-		log.Infof("Message Received: %+v", payload)
+		resp := &Response{
+			Payload: saved,
+		}
+		c.Pool.Broadcast <- resp
+		log.Infof("Message Received: %+v", request)
+	}
+}
+
+func (c *Connection) respondWithError(err error) {
+	r := Response{
+		Error: &Error{
+			Code:    InternalServerError,
+			Message: err.Error(),
+		},
+	}
+	if err := c.C.WriteJSON(r); err != nil {
+		log.Errorf("unable to send error response: %e", err)
 	}
 }

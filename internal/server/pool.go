@@ -2,14 +2,13 @@ package server
 
 import (
 	log "github.com/sirupsen/logrus"
-	"ralts/internal/chat"
 )
 
 type Pool struct {
 	Register   chan *Connection
 	Unregister chan *Connection
 	Clients    map[*Connection]bool
-	Broadcast  chan *chat.Message
+	Broadcast  chan *Response
 	Callbacks  *Callbacks
 }
 
@@ -18,7 +17,7 @@ func NewPool(callbacks *Callbacks) *Pool {
 		Register:   make(chan *Connection),
 		Unregister: make(chan *Connection),
 		Clients:    make(map[*Connection]bool),
-		Broadcast:  make(chan *chat.Message),
+		Broadcast:  make(chan *Response),
 		Callbacks:  callbacks,
 	}
 }
@@ -35,7 +34,10 @@ func (pool *Pool) Start() {
 				log.Errorf("unable to send recent messages to new client: %e", err)
 			} else {
 				for _, msg := range msgs {
-					if err := client.C.WriteJSON(msg); err != nil {
+					resp := &Response{
+						Payload: &msg,
+					}
+					if err := client.C.WriteJSON(resp); err != nil {
 						log.Errorf("unable to send message to new client: %e", err)
 					}
 				}
@@ -56,7 +58,6 @@ func (pool *Pool) Start() {
 			for client := range pool.Clients {
 				if err := client.C.WriteJSON(message); err != nil {
 					log.Errorf("unable to broadcast message: %e", err)
-					return
 				}
 			}
 		}
