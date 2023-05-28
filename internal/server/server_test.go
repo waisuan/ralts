@@ -41,6 +41,14 @@ func FakeServer(deps *dependencies.Dependencies) *httptest.Server {
 	return server
 }
 
+/**
+TODOs:
+- Group related tests together
+- Unhappy path for /conn_count
+- Unhappy path when trying to save most recent message
+- Unhappy path when trying to get the message count when handling read request
+*/
+
 func TestServer_ServeChat(t *testing.T) {
 	assert := assert.New(t)
 

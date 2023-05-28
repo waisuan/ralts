@@ -54,7 +54,7 @@ func (c *Chat) LoadAllMessages() (Messages, error) {
 		messages = append(messages, m)
 	}
 	if err := rows.Err(); err != nil {
-		log.Error(fmt.Sprintf("Unable to load chat messages -> %s", err.Error()))
+		log.Error(fmt.Sprintf("Something went wrong -> %s", err.Error()))
 		return nil, err
 	}
 
@@ -96,7 +96,7 @@ func (c *Chat) GetMessageCount(username string, today func() time.Time) (int, er
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Error(fmt.Sprintf("Unable to get message count -> %s", err.Error()))
+		log.Error(fmt.Sprintf("Something went wrong -> %s", err.Error()))
 		return 0, err
 	}
 

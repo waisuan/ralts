@@ -2,8 +2,8 @@ package dependencies
 
 import (
 	"context"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	log "github.com/sirupsen/logrus"
 	"ralts/internal/config"
 )
@@ -19,7 +19,7 @@ type Database struct {
 }
 
 func NewDB(cfg *config.Config) *Database {
-	conn, err := pgxpool.Connect(context.Background(), cfg.DatabaseConn)
+	conn, err := pgxpool.New(context.Background(), cfg.DatabaseConn)
 	if err != nil {
 		log.Fatalf("unable to start DB instance: %e", err)
 	}
