@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
-	"ralts/internal/chat"
 	"ralts/internal/config"
 	"ralts/internal/dependencies"
 	testHelper "ralts/internal/testing"
@@ -63,21 +62,36 @@ func TestServer_ServeChat(t *testing.T) {
 	assert.Nil(err)
 	assert.NotNil(ws)
 
-	// Test_Write
-	sentPayload := &Payload{UserId: "e.sia", Message: "Lorem Ipsum"}
-	err = ws.WriteJSON(sentPayload)
-	assert.Nil(err)
+	t.Run("happy path", func(t *testing.T) {
+		// Test_Write
+		req := &Request{UserId: "e.sia", Message: "Lorem Ipsum"}
+		err = ws.WriteJSON(req)
+		assert.Nil(err)
 
-	_, msg, err := ws.ReadMessage()
-	assert.Nil(err)
+		_, msg, err := ws.ReadMessage()
+		assert.Nil(err)
 
-	// Test_Read
-	var receivedPayload chat.Message
-	_ = json.Unmarshal(msg, &receivedPayload)
-	assert.Equal(int64(1), receivedPayload.ChatId)
-	assert.Equal(sentPayload.Message, receivedPayload.Message)
-	assert.Equal(sentPayload.UserId, receivedPayload.Username)
-	assert.NotNil(receivedPayload.CreatedAt)
+		// Test_Read
+		var resp Response
+		_ = json.Unmarshal(msg, &resp)
+		payload := resp.Payload
+		procErr := resp.Error
+		assert.Nil(procErr)
+		assert.Equal(int64(1), payload.ChatId)
+		assert.Equal(req.Message, payload.Message)
+		assert.Equal(req.UserId, payload.Username)
+		assert.NotNil(payload.CreatedAt)
+	})
+
+	t.Run("bad request", func(t *testing.T) {
+		_ = ws.WriteJSON("bad request")
+		_, msg, _ := ws.ReadMessage()
+		var resp Response
+		_ = json.Unmarshal(msg, &resp)
+		assert.Nil(resp.Payload)
+		assert.Equal(InternalServerError, resp.Error.Code)
+		assert.Contains(resp.Error.Message, "cannot unmarshal")
+	})
 }
 
 func TestServer_IncrDecrConnCount(t *testing.T) {
@@ -164,15 +178,15 @@ func TestServer_MaxSentMsgPerDay(t *testing.T) {
 	assert.Nil(err)
 	assert.NotNil(ws)
 
-	var sentPayload *Payload
+	var sentPayload *Request
 	for i := 0; i < 5; i++ {
-		sentPayload = &Payload{UserId: "e.sia.2", Message: "Lorem Ipsum"}
+		sentPayload = &Request{UserId: "e.sia.2", Message: "Lorem Ipsum"}
 		err = ws.WriteJSON(sentPayload)
 		assert.Nil(err)
 		_, _, err = ws.ReadMessage()
 		assert.Nil(err)
 	}
-	sentPayload = &Payload{UserId: "e.sia.2", Message: "This won't go through..."}
+	sentPayload = &Request{UserId: "e.sia.2", Message: "This won't go through..."}
 	_ = ws.WriteJSON(sentPayload)
 	_, _, err = ws.ReadMessage()
 	assert.Equal("websocket: close 1013: reached max no. of messages sent today", err.Error())
