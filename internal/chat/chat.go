@@ -8,6 +8,12 @@ import (
 	"time"
 )
 
+type ChatHandler interface {
+	LoadAllMessages() (Messages, error)
+	SaveMessage(username string, text string, now func() time.Time) (*Message, error)
+	GetMessageCount(username string, today func() time.Time) (int, error)
+}
+
 type Message struct {
 	ChatId    int64     `json:"chatId"`
 	Username  string    `json:"username"`

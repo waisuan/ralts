@@ -12,6 +12,8 @@ type CoreStorageInterface interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Close()
+
+	Exec(ctx context.Context, sql string, args ...any) error
 }
 
 type Database struct {
@@ -39,4 +41,9 @@ func (db *Database) Query(ctx context.Context, sql string, args ...any) (pgx.Row
 
 func (db *Database) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
 	return db.Conn.QueryRow(ctx, sql, args...)
+}
+
+func (db *Database) Exec(ctx context.Context, sql string, args ...any) error {
+	_, err := db.Conn.Exec(ctx, sql, args...)
+	return err
 }

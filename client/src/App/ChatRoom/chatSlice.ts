@@ -53,7 +53,7 @@ export const chatSlice = createSlice({
     receiveMessage: ((state, action) => {
       console.log(action.payload);
       const payload = JSON.parse(action.payload);
-      state.messages.push(payload);
+      state.messages.push(payload['Payload']);
     }),
     sendMessage: ((state, action) => {
       //

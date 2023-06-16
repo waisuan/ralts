@@ -25,6 +25,7 @@ func (c *Callbacks) Listen() {
 	for {
 		select {
 		case <-c.PostRegister:
+			log.Info(">>> PostRegister")
 			err := c.Deps.Cache.Incr(CONN_COUNT_KEY)
 			if err != nil {
 				log.Errorf("unable to handle PostRegister callback: %e", err)
@@ -32,6 +33,7 @@ func (c *Callbacks) Listen() {
 
 			break
 		case <-c.PostUnregister:
+			log.Info(">>> PostUnregister")
 			err := c.Deps.Cache.Decr(CONN_COUNT_KEY)
 			if err != nil {
 				log.Errorf("unable to handle PostUnregister callback: %e", err)

@@ -26,3 +26,6 @@ mig_up:
 
 lint:
 	golangci-lint run ./...
+
+gen_mock:
+	mockery --name=$(interface)
