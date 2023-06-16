@@ -44,6 +44,7 @@ func NewServer(deps *dependencies.Dependencies) *Server {
 		return s.ServeChat(c, pool)
 	})
 	e.GET("/conn_count", s.GetConnCount)
+	e.GET("/news-feed", s.GetNewsFeed)
 
 	return s
 }
@@ -96,4 +97,8 @@ func (s *Server) GetConnCount(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, res)
+}
+
+func (s *Server) GetNewsFeed(c echo.Context) error {
+	return c.JSON(http.StatusOK, nil)
 }
