@@ -6,17 +6,22 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"ralts/internal/dependencies"
+	"time"
 )
 
 type Article struct {
-	Author      string `json:"author"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Url         string `json:"url"`
-	PublishedAt string `json:"published_at"`
+	Author      string    `json:"author"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Url         string    `json:"url"`
+	PublishedAt time.Time `json:"published_at"`
 }
 
 type Articles []Article
+
+type NewsFeedHandler interface {
+	LoadAllArticles() (Articles, error)
+}
 
 type NewsFeed struct {
 	deps *dependencies.Dependencies
@@ -37,7 +42,11 @@ func (nf *NewsFeed) Print() {
 }
 
 func (nf *NewsFeed) LoadAllArticles() (Articles, error) {
-	rows, err := nf.deps.Storage.Query(context.Background(), "select * from news_feed order by published_at;")
+	rows, err := nf.deps.Storage.Query(context.Background(), `
+		select author, title, description, url, published_at
+		from news_feed 
+		order by published_at;
+`)
 	if err != nil {
 		log.Error(fmt.Sprintf("Unable to execute query -> %s", err.Error()))
 		return nil, err

@@ -11,7 +11,6 @@ import (
 	"ralts/internal/config"
 	"ralts/internal/dependencies"
 	"ralts/internal/newsfeed"
-	"time"
 )
 
 func main() {
@@ -48,15 +47,15 @@ func main() {
 		j, _ := json.MarshalIndent(n, "", "\t")
 		fmt.Println(string(j))
 
-		t, err := time.Parse(time.RFC3339, n.PublishedAt)
-		if err != nil {
-			panic(err)
-		}
+		//t, err := time.Parse(time.RFC3339, n.PublishedAt)
+		//if err != nil {
+		//	panic(err)
+		//}
 
 		err = deps.Storage.Exec(context.Background(), `
     	insert into news_feed (author, title, description, url, published_at)
     	VALUES ($1, $2, $3, $4, $5)
-        `, n.Author, n.Title, n.Description, n.Url, t)
+        `, n.Author, n.Title, n.Description, n.Url, n.PublishedAt)
 		if err != nil {
 			panic(err)
 		}

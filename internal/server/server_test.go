@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"ralts/internal/config"
 	"ralts/internal/dependencies"
+	"ralts/internal/newsfeed"
 	testHelper "ralts/internal/testing"
 	"strings"
 	"testing"
@@ -243,4 +244,60 @@ func TestServer_GetConnCount_NonEmptyResponse(t *testing.T) {
 	assert.NoError(s.GetConnCount(c))
 	assert.Equal(http.StatusOK, rec.Code)
 	assert.Equal(`{"count":1}`, strings.TrimSuffix(rec.Body.String(), "\n"))
+}
+
+func TestNewServer(t *testing.T) {
+	t.Run("GetNewsFeed", func(t *testing.T) {
+		t.Run("Empty response", func(t *testing.T) {
+			assert := assert.New(t)
+
+			deps := dependencies.NewDependencies(cfg)
+			defer deps.Disconnect()
+
+			th := testHelper.TestHelper(cfg)
+			defer th()
+
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			c.SetPath("/news_feed")
+			s := NewServer(deps)
+
+			mockCfg := newsfeed.MockNewsFeedConfig{
+				Seeded: false,
+			}
+			nf := newsfeed.NewMockNewsFeedHandler(&mockCfg)
+			assert.NoError(s.GetNewsFeed(c, nf))
+			assert.Equal(`[]`, strings.TrimSuffix(rec.Body.String(), "\n"))
+		})
+
+		t.Run("Non-empty response", func(t *testing.T) {
+			assert := assert.New(t)
+
+			deps := dependencies.NewDependencies(cfg)
+			defer deps.Disconnect()
+
+			th := testHelper.TestHelper(cfg)
+			defer th()
+
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			c.SetPath("/news_feed")
+			s := NewServer(deps)
+
+			mockCfg := newsfeed.MockNewsFeedConfig{
+				Seeded: true,
+			}
+			nf := newsfeed.NewMockNewsFeedHandler(&mockCfg)
+			assert.NoError(s.GetNewsFeed(c, nf))
+
+			var articles newsfeed.Articles
+			err := json.NewDecoder(rec.Body).Decode(&articles)
+			assert.Nil(err)
+			assert.NotEmpty(articles)
+		})
+	})
 }

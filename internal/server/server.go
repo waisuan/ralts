@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"ralts/internal/chat"
 	"ralts/internal/dependencies"
+	"ralts/internal/newsfeed"
 	"strconv"
 )
 
@@ -44,7 +45,9 @@ func NewServer(deps *dependencies.Dependencies) *Server {
 		return s.ServeChat(c, pool)
 	})
 	e.GET("/conn_count", s.GetConnCount)
-	e.GET("/news-feed", s.GetNewsFeed)
+	e.GET("/news-feed", func(c echo.Context) error {
+		return s.GetNewsFeed(c, newsfeed.NewNewsFeed(deps))
+	})
 
 	return s
 }
@@ -99,6 +102,12 @@ func (s *Server) GetConnCount(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func (s *Server) GetNewsFeed(c echo.Context) error {
-	return c.JSON(http.StatusOK, nil)
+func (s *Server) GetNewsFeed(c echo.Context, newsFeedHandler newsfeed.NewsFeedHandler) error {
+	a, err := newsFeedHandler.LoadAllArticles()
+	if err != nil {
+		log.Errorf("unable to load news feed articles: %e", err)
+		return c.JSON(http.StatusInternalServerError, "unable to handle request")
+	}
+
+	return c.JSON(http.StatusOK, a)
 }
