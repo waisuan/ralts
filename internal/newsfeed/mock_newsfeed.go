@@ -1,6 +1,7 @@
 package newsfeed
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -10,7 +11,8 @@ type MockNewsFeedHandler struct {
 }
 
 type MockNewsFeedConfig struct {
-	Seeded bool
+	Seeded    bool
+	HasErrors bool
 }
 
 func NewMockNewsFeedHandler(cfg *MockNewsFeedConfig) *MockNewsFeedHandler {
@@ -20,6 +22,9 @@ func NewMockNewsFeedHandler(cfg *MockNewsFeedConfig) *MockNewsFeedHandler {
 }
 
 func (mnf *MockNewsFeedHandler) LoadAllArticles() (Articles, error) {
+	if mnf.Config.HasErrors == true {
+		return []Article{}, errors.New("*shrug*")
+	}
 	if mnf.Config.Seeded == false {
 		return []Article{}, nil
 	}

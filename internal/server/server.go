@@ -40,6 +40,7 @@ func NewServer(deps *dependencies.Dependencies) *Server {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
+	//middleware.BasicAuth()
 
 	e.GET("/ws", func(c echo.Context) error {
 		return s.ServeChat(c, pool)
