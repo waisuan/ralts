@@ -14,6 +14,8 @@ type Config struct {
 	MaxConnCount     int    `env:"MAX_CONN_COUNT" envDefault:"50"`
 	RedisConn        string `env:"REDIS_URL,notEmpty"`
 	MaxSentMsgPerDay int    `env:"MAX_SENT_MSG_PER_DAY" envDefault:"1000"`
+	ServiceUsername  string `env:"SERVICE_USERNAME"`
+	ServicePassword  string `env:"SERVICE_PASSWORD"`
 }
 
 const projectDirName = "ralts"

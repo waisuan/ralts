@@ -247,7 +247,7 @@ func TestNewServer(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
-			c.SetPath("/conn_count")
+			c.SetPath("/api/conn_count")
 
 			s := NewServer(deps)
 
@@ -271,7 +271,7 @@ func TestNewServer(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
-			c.SetPath("/conn_count")
+			c.SetPath("/api/conn_count")
 			s := NewServer(deps)
 
 			assert.NoError(s.GetConnCount(c))
@@ -294,7 +294,7 @@ func TestNewServer(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
-			c.SetPath("/news_feed")
+			c.SetPath("/api/news_feed")
 			s := NewServer(deps)
 
 			mockCfg := newsfeed.MockNewsFeedConfig{
@@ -318,7 +318,7 @@ func TestNewServer(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
-			c.SetPath("/news_feed")
+			c.SetPath("/api/news_feed")
 			s := NewServer(deps)
 
 			mockCfg := newsfeed.MockNewsFeedConfig{
@@ -346,7 +346,7 @@ func TestNewServer(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
-			c.SetPath("/news_feed")
+			c.SetPath("/api/news_feed")
 			s := NewServer(deps)
 
 			mockCfg := newsfeed.MockNewsFeedConfig{

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/subtle"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -40,13 +41,23 @@ func NewServer(deps *dependencies.Dependencies) *Server {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
-	//middleware.BasicAuth()
 
+	// TODO: Auth
 	e.GET("/ws", func(c echo.Context) error {
 		return s.ServeChat(c, pool)
 	})
-	e.GET("/conn_count", s.GetConnCount)
-	e.GET("/news-feed", func(c echo.Context) error {
+
+	apiRoutes := e.Group("/api")
+	apiRoutes.Use(middleware.BasicAuth(func(username string, password string, context echo.Context) (bool, error) {
+		if subtle.ConstantTimeCompare([]byte(username), []byte(deps.Cfg.ServiceUsername)) == 1 &&
+			subtle.ConstantTimeCompare([]byte(password), []byte(deps.Cfg.ServicePassword)) == 1 {
+			return true, nil
+		}
+		return false, nil
+	}))
+
+	apiRoutes.GET("/conn_count", s.GetConnCount)
+	apiRoutes.GET("/news-feed", func(c echo.Context) error {
 		return s.GetNewsFeed(c, newsfeed.NewNewsFeed(deps))
 	})
 
