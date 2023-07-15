@@ -13,7 +13,7 @@ type Connection struct {
 	ID   string
 	C    *websocket.Conn
 	Pool *Pool
-	Chat *chat.Chat
+	Chat chat.ChatHandler
 	Deps *dependencies.Dependencies
 }
 

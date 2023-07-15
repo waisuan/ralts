@@ -52,7 +52,7 @@ func main() {
 		//	panic(err)
 		//}
 
-		err = deps.Storage.Exec(context.Background(), `
+		_, err = deps.Storage.Exec(context.Background(), `
     	insert into news_feed (author, title, description, url, published_at)
     	VALUES ($1, $2, $3, $4, $5)
         `, n.Author, n.Title, n.Description, n.Url, n.PublishedAt)

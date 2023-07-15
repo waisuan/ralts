@@ -44,7 +44,7 @@ func NewServer(deps *dependencies.Dependencies) *Server {
 
 	// TODO: Auth
 	e.GET("/ws", func(c echo.Context) error {
-		return s.ServeChat(c, pool)
+		return s.ServeChat(c, pool, chat.NewChat(deps))
 	})
 
 	apiRoutes := e.Group("/api")
@@ -64,7 +64,7 @@ func NewServer(deps *dependencies.Dependencies) *Server {
 	return s
 }
 
-func (s *Server) ServeChat(c echo.Context, pool *Pool) error {
+func (s *Server) ServeChat(c echo.Context, pool *Pool, chatHandler chat.ChatHandler) error {
 	// Upgrade our raw HTTP connection to a websocket based one
 	conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
@@ -83,7 +83,7 @@ func (s *Server) ServeChat(c echo.Context, pool *Pool) error {
 			ID:   uuid.NewString(),
 			C:    conn,
 			Pool: pool,
-			Chat: chat.NewChat(s.Deps),
+			Chat: chatHandler,
 			Deps: s.Deps,
 		}
 

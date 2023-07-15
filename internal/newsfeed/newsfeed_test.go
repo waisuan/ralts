@@ -22,7 +22,7 @@ func SeedNewsFeed(count int, deps *dependencies.Dependencies) {
 		description := fmt.Sprintf("description_%d", i)
 		publishedAt := time.Now().Add(time.Hour * time.Duration(i))
 
-		err := deps.Storage.Exec(context.Background(), `
+		_, err := deps.Storage.Exec(context.Background(), `
     	insert into news_feed (author, title, description, url, published_at)
     	VALUES ($1, $2, $3, $4, $5)
         `, author, title, description, "", publishedAt)
@@ -39,7 +39,7 @@ func TestNewNewsFeed(t *testing.T) {
 		deps := dependencies.NewDependencies(cfg)
 		defer deps.Disconnect()
 
-		th := testHelper.TestHelper(cfg)
+		th := testHelper.InitTestResources(cfg)
 		defer th()
 
 		count := 10

@@ -3,6 +3,7 @@ package dependencies
 import (
 	"context"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	log "github.com/sirupsen/logrus"
 	"ralts/internal/config"
@@ -13,7 +14,7 @@ type CoreStorageInterface interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Close()
 
-	Exec(ctx context.Context, sql string, args ...any) error
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 }
 
 type Database struct {
@@ -43,7 +44,6 @@ func (db *Database) QueryRow(ctx context.Context, sql string, args ...any) pgx.R
 	return db.Conn.QueryRow(ctx, sql, args...)
 }
 
-func (db *Database) Exec(ctx context.Context, sql string, args ...any) error {
-	_, err := db.Conn.Exec(ctx, sql, args...)
-	return err
+func (db *Database) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+	return db.Conn.Exec(ctx, sql, args...)
 }

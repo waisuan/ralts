@@ -24,7 +24,7 @@ func TestChat_LoadAllMessages(t *testing.T) {
 	deps := dependencies.NewDependencies(cfg)
 	defer deps.Disconnect()
 
-	th := testHelper.TestHelper(cfg)
+	th := testHelper.InitTestResources(cfg)
 	defer th()
 
 	chat := NewChat(deps)
@@ -90,7 +90,7 @@ func TestChat_SaveMessage(t *testing.T) {
 	deps := dependencies.NewDependencies(cfg)
 	defer deps.Disconnect()
 
-	th := testHelper.TestHelper(cfg)
+	th := testHelper.InitTestResources(cfg)
 	defer th()
 
 	chat := NewChat(deps)
@@ -125,7 +125,7 @@ func TestChat_GetMessageCount(t *testing.T) {
 	deps := dependencies.NewDependencies(cfg)
 	defer deps.Disconnect()
 
-	th := testHelper.TestHelper(cfg)
+	th := testHelper.InitTestResources(cfg)
 	defer th()
 
 	chat := NewChat(deps)
