@@ -49,6 +49,10 @@ func NewServer(deps *dependencies.Dependencies) *Server {
 
 	apiRoutes := e.Group("/api")
 	apiRoutes.Use(middleware.BasicAuth(func(username string, password string, context echo.Context) (bool, error) {
+		if !deps.Cfg.AuthEnabled {
+			return true, nil
+		}
+
 		if subtle.ConstantTimeCompare([]byte(username), []byte(deps.Cfg.ServiceUsername)) == 1 &&
 			subtle.ConstantTimeCompare([]byte(password), []byte(deps.Cfg.ServicePassword)) == 1 {
 			return true, nil

@@ -16,6 +16,7 @@ type Config struct {
 	MaxSentMsgPerDay int    `env:"MAX_SENT_MSG_PER_DAY" envDefault:"1000"`
 	ServiceUsername  string `env:"SERVICE_USERNAME"`
 	ServicePassword  string `env:"SERVICE_PASSWORD"`
+	AuthEnabled      bool   `env:"AUTH_ENABLED" envDefault:"true"`
 }
 
 const projectDirName = "ralts"
