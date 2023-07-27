@@ -3,3 +3,4 @@ ralts.iml
 dummy.txt
 tmp/
 .env
+.env.test

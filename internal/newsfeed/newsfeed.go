@@ -10,6 +10,7 @@ import (
 )
 
 type Article struct {
+	Id          int       `json:"id"`
 	Author      string    `json:"author"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
@@ -43,7 +44,7 @@ func (nf *NewsFeed) Print() {
 
 func (nf *NewsFeed) LoadAllArticles() (Articles, error) {
 	rows, err := nf.deps.Storage.Query(context.Background(), `
-		select author, title, description, url, published_at
+		select id, author, title, description, url, published_at
 		from news_feed 
 		order by published_at;
 `)
@@ -56,7 +57,7 @@ func (nf *NewsFeed) LoadAllArticles() (Articles, error) {
 	var articles Articles
 	for rows.Next() {
 		var a Article
-		err := rows.Scan(&a.Author, &a.Title, &a.Description, &a.Url, &a.PublishedAt)
+		err := rows.Scan(&a.Id, &a.Author, &a.Title, &a.Description, &a.Url, &a.PublishedAt)
 		if err != nil {
 			log.Error(fmt.Sprintf("Unable load query results -> %s", err.Error()))
 			return nil, err

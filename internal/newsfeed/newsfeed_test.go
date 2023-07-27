@@ -50,6 +50,7 @@ func TestNewNewsFeed(t *testing.T) {
 		a, err := nf.LoadAllArticles()
 		assert.Nil(err)
 		assert.Len(a, count)
+		assert.NotEmpty(a[0].Id)
 		assert.NotEmpty(a[0].Author)
 		assert.NotEmpty(a[0].Title)
 		assert.NotEmpty(a[0].Description)
